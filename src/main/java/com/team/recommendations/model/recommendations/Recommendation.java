@@ -1,4 +1,4 @@
-package com.team.recommendations.model;
+package com.team.recommendations.model.recommendations;
 
 import java.util.Objects;
 import java.util.UUID;

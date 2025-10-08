@@ -1,6 +1,8 @@
 package com.team.recommendations.service;
 
-import com.team.recommendations.model.Recommendation;
+import com.team.recommendations.model.recommendations.Recommendation;
+import com.team.recommendations.model.rules.CompareRule;
+import com.team.recommendations.model.rules.IfUsedRule;
 import com.team.recommendations.repository.RecommendationsRepository;
 import org.springframework.stereotype.Service;
 
@@ -39,11 +41,12 @@ public class SimpleCreditService implements RuleSetService {
 
     public boolean isGettingRecommendation(UUID id) {
 //        rule1
-
+        IfUsedRule rule1 = new IfUsedRule(recommendationsRepository.getCreditUse(),false);
 //        rule2
-
+        CompareRule rule2 = new CompareRule(recommendationsRepository.getDebitDeposit(),">",recommendationsRepository.getDebitWithdraw());
 //        rule3
+        CompareRule rule3 = new CompareRule(recommendationsRepository.getDebitWithdraw(),">",100000);
 
-        return true;
+        return rule1.isFollowed() && rule2.isFollowed() && rule3.isFollowed();
     }
 }

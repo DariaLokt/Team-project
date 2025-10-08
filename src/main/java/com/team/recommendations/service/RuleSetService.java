@@ -1,6 +1,6 @@
 package com.team.recommendations.service;
 
-import com.team.recommendations.model.Recommendation;
+import com.team.recommendations.model.recommendations.Recommendation;
 
 import java.util.Optional;
 import java.util.UUID;

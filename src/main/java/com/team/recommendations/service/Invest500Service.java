@@ -1,6 +1,8 @@
 package com.team.recommendations.service;
 
-import com.team.recommendations.model.Recommendation;
+import com.team.recommendations.model.recommendations.Recommendation;
+import com.team.recommendations.model.rules.CompareRule;
+import com.team.recommendations.model.rules.IfUsedRule;
 import com.team.recommendations.repository.RecommendationsRepository;
 import org.springframework.stereotype.Service;
 
@@ -27,11 +29,12 @@ public class Invest500Service implements RuleSetService{
     @Override
     public boolean isGettingRecommendation(UUID id) {
 //        rule1
-
+        IfUsedRule rule1 = new IfUsedRule(recommendationsRepository.getDebitUse(),true);
 //        rule2
-
+        IfUsedRule rule2 = new IfUsedRule(recommendationsRepository.getInvestUse(), false);
 //        rule3
+        CompareRule rule3 = new CompareRule(recommendationsRepository.getSavingDeposit(),">",1000);
 
-        return true;
+        return rule1.isFollowed() && rule2.isFollowed() && rule3.isFollowed();
     }
 }
