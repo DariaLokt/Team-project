@@ -1,6 +1,8 @@
 package com.team.recommendations.service;
 
-import com.team.recommendations.model.Recommendation;
+import com.team.recommendations.model.recommendations.Recommendation;
+import com.team.recommendations.model.rules.CompareRule;
+import com.team.recommendations.model.rules.IfUsedRule;
 import com.team.recommendations.repository.RecommendationsRepository;
 import org.springframework.stereotype.Service;
 
@@ -37,11 +39,13 @@ public class TopSavingService implements RuleSetService {
 
     public boolean isGettingRecommendation(UUID id) {
 //        rule1
-
+        IfUsedRule rule1 = new IfUsedRule(recommendationsRepository.getDebitUse(),true);
 //        rule2
-
+        CompareRule rule2_1 = new CompareRule(recommendationsRepository.getDebitDeposit(),">=",50000);
+        CompareRule rule2_2 = new CompareRule(recommendationsRepository.getSavingDeposit(),">=",50000);
 //        rule3
+        CompareRule rule3 = new CompareRule(recommendationsRepository.getDebitDeposit(),">",recommendationsRepository.getDebitWithdraw());
 
-        return true;
+        return rule1.isFollowed() && (rule2_1.isFollowed() || rule2_2.isFollowed()) && rule3.isFollowed();
     }
 }

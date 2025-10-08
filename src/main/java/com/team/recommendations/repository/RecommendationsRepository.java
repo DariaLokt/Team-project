@@ -21,4 +21,22 @@ public class RecommendationsRepository {
                 user);
         return result != null ? result : 0;
     }
+    public boolean getDebitUse() {
+        return true;
+    }
+    public boolean getInvestUse(){
+        return false;
+    };
+    public int getSavingDeposit(){
+        return 1000000;
+    };
+    public int getDebitDeposit(){
+        return 10000000;
+    };
+    public int getDebitWithdraw(){
+        return 1000000;
+    };
+    public boolean getCreditUse(){
+        return false;
+    };
 }
