@@ -1,10 +1,13 @@
 package com.team.recommendations.controller;
 
+import com.team.recommendations.model.recommendations.Recommendation;
+import com.team.recommendations.model.recommendations.RecommendationResponse;
 import com.team.recommendations.service.Invest500Service;
 import com.team.recommendations.service.SimpleCreditService;
 import com.team.recommendations.service.TopSavingService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
@@ -23,9 +26,12 @@ public class RecommendationController {
         this.simpleCreditService = simpleCreditService;
     }
 
-//  Будет обращаться к сервисам и вернёт набор рекомендаций
     @GetMapping("/recommendation/{user_id}")
-    public void getUserRecommendations() {
-
+    public RecommendationResponse getUserRecommendations(@PathVariable("user_id")UUID user_id) {
+        Collection<Recommendation> recommendations = new ArrayList<>();
+        recommendations.add(invest500Service.getRecommendation(user_id).get());
+        recommendations.add(topSavingService.getRecommendation(user_id).get());
+        recommendations.add(simpleCreditService.getRecommendation(user_id).get());
+        return new RecommendationResponse(user_id,recommendations);
     }
 }
