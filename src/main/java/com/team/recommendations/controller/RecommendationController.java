@@ -23,6 +23,7 @@ public class RecommendationController {
         this.simpleCreditService = simpleCreditService;
     }
 
+//  Будет обращаться к сервисам и вернёт набор рекомендаций
     @GetMapping("/recommendation/{user_id}")
     public void getUserRecommendations() {
 
