@@ -41,11 +41,11 @@ public class SimpleCreditService implements RuleSetService {
 
     public boolean isGettingRecommendation(UUID id) {
 //        rule1
-        IfUsedRule rule1 = new IfUsedRule(recommendationsRepository.getCreditUse(),false);
+        IfUsedRule rule1 = new IfUsedRule(recommendationsRepository.getCreditUse(id),false);
 //        rule2
-        CompareRule rule2 = new CompareRule(recommendationsRepository.getDebitDeposit(),">",recommendationsRepository.getDebitWithdraw());
+        CompareRule rule2 = new CompareRule(recommendationsRepository.getDebitDeposit(id),">",recommendationsRepository.getDebitWithdraw(id));
 //        rule3
-        CompareRule rule3 = new CompareRule(recommendationsRepository.getDebitWithdraw(),">",100000);
+        CompareRule rule3 = new CompareRule(recommendationsRepository.getDebitWithdraw(id),">",100000);
 
         return rule1.isFollowed() && rule2.isFollowed() && rule3.isFollowed();
     }

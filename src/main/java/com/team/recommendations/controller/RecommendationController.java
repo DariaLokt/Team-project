@@ -7,7 +7,6 @@ import com.team.recommendations.service.SimpleCreditService;
 import com.team.recommendations.service.TopSavingService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
@@ -29,9 +28,18 @@ public class RecommendationController {
     @GetMapping("/recommendation/{user_id}")
     public RecommendationResponse getUserRecommendations(@PathVariable("user_id")UUID user_id) {
         Collection<Recommendation> recommendations = new ArrayList<>();
-        recommendations.add(invest500Service.getRecommendation(user_id).get());
-        recommendations.add(topSavingService.getRecommendation(user_id).get());
-        recommendations.add(simpleCreditService.getRecommendation(user_id).get());
+//        if (invest500Service.isGettingRecommendation(user_id)) быстрее ли?
+        if (invest500Service.getRecommendation(user_id).isPresent())
+        {
+            recommendations.add(invest500Service.getRecommendation(user_id).get());
+        }
+        if (topSavingService.getRecommendation(user_id).isPresent()) {
+            recommendations.add(topSavingService.getRecommendation(user_id).get());
+        }
+        if (simpleCreditService.getRecommendation(user_id).isPresent())
+        {
+            recommendations.add(simpleCreditService.getRecommendation(user_id).get());
+        }
         return new RecommendationResponse(user_id,recommendations);
     }
 }
