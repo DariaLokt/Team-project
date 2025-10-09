@@ -29,11 +29,11 @@ public class Invest500Service implements RuleSetService{
     @Override
     public boolean isGettingRecommendation(UUID id) {
 //        rule1
-        IfUsedRule rule1 = new IfUsedRule(recommendationsRepository.getDebitUse(),true);
+        IfUsedRule rule1 = new IfUsedRule(recommendationsRepository.getDebitUse(id),true);
 //        rule2
-        IfUsedRule rule2 = new IfUsedRule(recommendationsRepository.getInvestUse(), false);
+        IfUsedRule rule2 = new IfUsedRule(recommendationsRepository.getInvestUse(id), false);
 //        rule3
-        CompareRule rule3 = new CompareRule(recommendationsRepository.getSavingDeposit(),">",1000);
+        CompareRule rule3 = new CompareRule(recommendationsRepository.getSavingDeposit(id),">",1000);
 
         return rule1.isFollowed() && rule2.isFollowed() && rule3.isFollowed();
     }

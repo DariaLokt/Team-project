@@ -39,12 +39,12 @@ public class TopSavingService implements RuleSetService {
 
     public boolean isGettingRecommendation(UUID id) {
 //        rule1
-        IfUsedRule rule1 = new IfUsedRule(recommendationsRepository.getDebitUse(),true);
+        IfUsedRule rule1 = new IfUsedRule(recommendationsRepository.getDebitUse(id),true);
 //        rule2
-        CompareRule rule2_1 = new CompareRule(recommendationsRepository.getDebitDeposit(),">=",50000);
-        CompareRule rule2_2 = new CompareRule(recommendationsRepository.getSavingDeposit(),">=",50000);
+        CompareRule rule2_1 = new CompareRule(recommendationsRepository.getDebitDeposit(id),">=",50000);
+        CompareRule rule2_2 = new CompareRule(recommendationsRepository.getSavingDeposit(id),">=",50000);
 //        rule3
-        CompareRule rule3 = new CompareRule(recommendationsRepository.getDebitDeposit(),">",recommendationsRepository.getDebitWithdraw());
+        CompareRule rule3 = new CompareRule(recommendationsRepository.getDebitDeposit(id),">",recommendationsRepository.getDebitWithdraw(id));
 
         return rule1.isFollowed() && (rule2_1.isFollowed() || rule2_2.isFollowed()) && rule3.isFollowed();
     }
