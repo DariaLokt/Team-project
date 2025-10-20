@@ -1,24 +1,37 @@
 package com.team.recommendations.model.dynamic;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.UUID;
 
+@Entity
+@Table(name = "rule")
 public class DynamicRule {
-    private final String query;
-    private final ArrayList<String> arguments;
-    private final Boolean negate;
+    @JsonIgnore
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
-    public DynamicRule(String query, ArrayList<String> arguments, Boolean negate) {
-        this.query = query;
-        this.arguments = arguments;
-        this.negate = negate;
+    private String query;
+    private String arguments;
+    private Boolean negate;
+
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "product_id")
+    private DynamicProduct product;
+
+    public DynamicRule() {
     }
 
     public String getQuery() {
         return query;
     }
 
-    public ArrayList<String> getArguments() {
+    public String getArguments() {
         return arguments;
     }
 
@@ -26,16 +39,24 @@ public class DynamicRule {
         return negate;
     }
 
+    public UUID getId() {
+        return id;
+    }
+
+    public DynamicProduct getProduct() {
+        return product;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         DynamicRule that = (DynamicRule) o;
-        return Objects.equals(query, that.query) && Objects.equals(arguments, that.arguments) && Objects.equals(negate, that.negate);
+        return Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(query, arguments, negate);
+        return Objects.hashCode(id);
     }
 
     @Override
@@ -45,5 +66,9 @@ public class DynamicRule {
                 ", arguments=" + arguments +
                 ", negate=" + negate +
                 '}';
+    }
+
+    public void setProduct(DynamicProduct product) {
+        this.product = product;
     }
 }

@@ -1,21 +1,28 @@
 package com.team.recommendations.model.dynamic;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+
+import java.util.Collection;
 import java.util.Objects;
 import java.util.UUID;
-//@Table
-public class DynamicProduct {
-    private final UUID id;
-    private final String product_name;
-    private final UUID product_id;
-    private final String product_text;
-    private final DynamicRule rule;
 
-    public DynamicProduct(String product_name, UUID product_id, String product_text, DynamicRule rule) {
-        this.id = UUID.randomUUID();
-        this.product_name = product_name;
-        this.product_id = product_id;
-        this.product_text = product_text;
-        this.rule = rule;
+@Entity
+@Table(name = "product")
+public class DynamicProduct {
+    @JsonIgnore
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    private String product_name;
+    private UUID product_id;
+    private String product_text;
+
+    @OneToMany(mappedBy = "product")
+    private Collection<DynamicRule> rule;
+
+    public DynamicProduct() {
     }
 
     public UUID getId() {
@@ -34,7 +41,7 @@ public class DynamicProduct {
         return product_text;
     }
 
-    public DynamicRule getRule() {
+    public Collection<DynamicRule> getRule() {
         return rule;
     }
 
