@@ -4,6 +4,8 @@ import com.team.recommendations.model.recommendations.Recommendation;
 import com.team.recommendations.model.rules.CompareRule;
 import com.team.recommendations.model.rules.IfUsedRule;
 import com.team.recommendations.repository.RecommendationsRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -17,8 +19,11 @@ public class SimpleCreditService implements RuleSetService {
         this.recommendationsRepository = recommendationsRepository;
     }
 
+    Logger logger = LoggerFactory.getLogger(SimpleCreditService.class);
+
     @Override
     public Optional<Recommendation> getRecommendation(UUID id) {
+        logger.info("Adding SimpleCredit function was invoked for user: {}", id);
         Recommendation recommendation = null;
         if (isGettingRecommendation(id)) {
             recommendation = new Recommendation("Простой кредит", UUID.fromString("ab138afb-f3ba-4a93-b74f-0fcee86d447f"),
@@ -46,6 +51,8 @@ public class SimpleCreditService implements RuleSetService {
         CompareRule rule2 = new CompareRule(recommendationsRepository.getTransactionSum(id,"DEBIT","DEPOSIT"),">",recommendationsRepository.getTransactionSum(id,"DEBIT","WITHDRAW"));
 //        rule3
         CompareRule rule3 = new CompareRule(recommendationsRepository.getTransactionSum(id,"DEBIT","WITHDRAW"),">",100000);
+
+        logger.info("SimpleCredit was checked for user: {}", id);
 
         return rule1.isFollowed() && rule2.isFollowed() && rule3.isFollowed();
     }

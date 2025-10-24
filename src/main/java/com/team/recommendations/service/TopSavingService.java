@@ -4,6 +4,8 @@ import com.team.recommendations.model.recommendations.Recommendation;
 import com.team.recommendations.model.rules.CompareRule;
 import com.team.recommendations.model.rules.IfUsedRule;
 import com.team.recommendations.repository.RecommendationsRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -17,8 +19,11 @@ public class TopSavingService implements RuleSetService {
         this.recommendationsRepository = recommendationsRepository;
     }
 
+    Logger logger = LoggerFactory.getLogger(TopSavingService.class);
+
     @Override
     public Optional<Recommendation> getRecommendation(UUID id) {
+        logger.info("Adding TopSaving function was invoked for user: {}", id);
         Recommendation recommendation = null;
         if (isGettingRecommendation(id)) {
             recommendation = new Recommendation("Top Saving", UUID.fromString("59efc529-2fff-41af-baff-90ccd7402925"),
@@ -45,6 +50,8 @@ public class TopSavingService implements RuleSetService {
         CompareRule rule2_2 = new CompareRule(recommendationsRepository.getTransactionSum(id,"SAVING","DEPOSIT"),">=",50000);
 //        rule3
         CompareRule rule3 = new CompareRule(recommendationsRepository.getTransactionSum(id,"DEBIT","DEPOSIT"),">",recommendationsRepository.getTransactionSum(id,"DEBIT","WITHDRAW"));
+
+        logger.info("TopSaving was checked for user: {}", id);
 
         return rule1.isFollowed() && (rule2_1.isFollowed() || rule2_2.isFollowed()) && rule3.isFollowed();
     }
