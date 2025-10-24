@@ -9,6 +9,4 @@ import java.util.UUID;
 
 @Repository
 public interface DynamicProductRepository extends JpaRepository<DynamicProduct, UUID> {
-//    @Query(value = "SELECT COUNT(*) FROM student", nativeQuery = true)
-//    Long getAmountOfStudents();
 }

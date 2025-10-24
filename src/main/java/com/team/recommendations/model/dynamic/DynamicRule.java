@@ -72,4 +72,20 @@ public class DynamicRule {
     public void setProduct(DynamicProduct product) {
         this.product = product;
     }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public void setQuery(String query) {
+        this.query = query;
+    }
+
+    public void setArguments(Collection<String> arguments) {
+        this.arguments = arguments;
+    }
+
+    public void setNegate(Boolean negate) {
+        this.negate = negate;
+    }
 }

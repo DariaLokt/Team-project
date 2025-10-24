@@ -11,6 +11,7 @@ import com.team.recommendations.repository.DynamicProductRepository;
 import com.team.recommendations.repository.RecommendationsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -42,6 +43,7 @@ public class DynamicRecommendationService {
             .expireAfterWrite(10, TimeUnit.MINUTES)
             .build();
 
+    @Cacheable("recommendations")
     public Collection<Recommendation> getRecommendations(UUID userID) {
         logger.info("The method for creating recommendations was invoked");
         long start = System.nanoTime();
