@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -16,7 +17,7 @@ public class DynamicRule {
     private UUID id;
 
     private String query;
-    private String arguments;
+    private Collection<String> arguments;
     private Boolean negate;
 
     @JsonIgnore
@@ -31,7 +32,7 @@ public class DynamicRule {
         return query;
     }
 
-    public String getArguments() {
+    public Collection<String> getArguments() {
         return arguments;
     }
 

@@ -15,3 +15,6 @@ CREATE TABLE rule (
     negate BOOL,
     product_id UUID REFERENCES product (id)
 );
+
+-- changeset dlok:2
+ALTER TABLE rule ALTER COLUMN arguments TYPE TEXT[] USING arguments::text[];

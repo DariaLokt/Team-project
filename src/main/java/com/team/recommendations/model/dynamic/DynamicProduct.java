@@ -1,6 +1,7 @@
 package com.team.recommendations.model.dynamic;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import jakarta.persistence.*;
 
 import java.util.Collection;
@@ -10,7 +11,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "product")
 public class DynamicProduct {
-    @JsonIgnore
+    @JsonProperty(access = Access.READ_ONLY)
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;

@@ -1,5 +1,6 @@
 package com.team.recommendations.controller;
 
+import com.team.recommendations.model.dynamic.Data;
 import com.team.recommendations.model.dynamic.DynamicProduct;
 import com.team.recommendations.service.DynamicService;
 import org.springframework.web.bind.annotation.*;
@@ -16,8 +17,8 @@ public class DynamicController {
     }
 
     @GetMapping("/rule")
-    public Collection<DynamicProduct> getAllProducts() {
-        return dynamicService.getAllProducts();
+    public Data getAllProducts() {
+        return new Data(dynamicService.getAllProducts());
     }
 
     @PostMapping("/rule")
