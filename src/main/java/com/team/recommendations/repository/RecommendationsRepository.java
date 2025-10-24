@@ -32,6 +32,22 @@ public class RecommendationsRepository {
         }
     }
 
+    public boolean getActiveUse(UUID user_id, String productType) {
+        Integer count = jdbcTemplate.queryForObject(
+                """
+                        SELECT COUNT (p.TYPE) AS Count
+                        FROM transactions t
+                        INNER JOIN products p ON t.product_id = p.id
+                        WHERE t.user_id = ? AND p.TYPE = ?""",
+                Integer.class,
+                user_id, productType);
+        if (count != null) {
+            return count >= 5;
+        } else {
+            return false;
+        }
+    }
+
     public int getTransactionSum(UUID user_id, String productType, String transactionType){
         Integer transactionSum = jdbcTemplate.queryForObject(
                 """

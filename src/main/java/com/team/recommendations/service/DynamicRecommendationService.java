@@ -1,0 +1,113 @@
+package com.team.recommendations.service;
+
+import com.team.recommendations.model.dynamic.DynamicProduct;
+import com.team.recommendations.model.dynamic.DynamicRule;
+import com.team.recommendations.model.recommendations.Recommendation;
+import com.team.recommendations.model.rules.CompareRule;
+import com.team.recommendations.model.rules.IfUsedRule;
+import com.team.recommendations.repository.DynamicProductRepository;
+import com.team.recommendations.repository.RecommendationsRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+public class DynamicRecommendationService {
+    private final DynamicProductRepository dynamicProductRepository;
+    private final RecommendationsRepository recommendationsRepository;
+    private final Collection<String> argsProdType;
+    private final Collection<String> argsTransType;
+    private final Collection<String> argsComparator;
+
+    public DynamicRecommendationService(DynamicProductRepository dynamicProductRepository, RecommendationsRepository recommendationsRepository) {
+        this.dynamicProductRepository = dynamicProductRepository;
+        this.recommendationsRepository = recommendationsRepository;
+        this.argsProdType = List.of("DEBIT","CREDIT","INVEST","SAVING");
+        this.argsTransType = List.of("WITHDRAW","DEPOSIT");
+        this.argsComparator = List.of(">","<","=",">=","<=");
+    }
+
+    public Collection<Recommendation> getRecommendations(UUID userID) {
+        Collection<Recommendation> recommendations = new ArrayList<>();
+        for (DynamicProduct product : dynamicProductRepository.findAll()) {
+            Collection<Boolean> ruleAbidance = new ArrayList<>();
+            for (DynamicRule rule : product.getRule()) {
+                switch (rule.getQuery()) {
+                    case "USER_OF" -> ruleAbidance.add(isUSER_OFRule(userID, rule));
+                    case "ACTIVE_USER_OF" -> ruleAbidance.add(isACTIVE_USER_OFRule(userID,rule));
+                    case "TRANSACTION_SUM_COMPARE" -> ruleAbidance.add(isTRANSACTION_SUM_COMPARERule(userID,rule));
+                    case "TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW" -> ruleAbidance.add(isTRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAWRule(userID,rule));
+                    default -> throw new RuntimeException("No such query");
+                }
+            }
+            if (!ruleAbidance.contains(false)) {
+                Recommendation recommendation = new Recommendation(product.getProduct_name(), product.getProduct_id(), product.getProduct_text());
+                recommendations.add(recommendation);
+            } else if (String.valueOf(product.getProduct_id()).equals("59efc529-2fff-41af-baff-90ccd7402925")) {
+                if (dealWithTopSavings(userID)) {
+                    Recommendation recommendation = new Recommendation(product.getProduct_name(), product.getProduct_id(), product.getProduct_text());
+                    recommendations.add(recommendation);
+                }
+            }
+        }
+        return recommendations;
+    }
+
+    private boolean dealWithTopSavings(UUID id) {
+//        rule1
+        IfUsedRule rule1 = new IfUsedRule(recommendationsRepository.getUse(id,"DEBIT"),true);
+//        rule2
+        CompareRule rule2_1 = new CompareRule(recommendationsRepository.getTransactionSum(id,"DEBIT","DEPOSIT"),">=",50000);
+        CompareRule rule2_2 = new CompareRule(recommendationsRepository.getTransactionSum(id,"SAVING","DEPOSIT"),">=",50000);
+//        rule3
+        CompareRule rule3 = new CompareRule(recommendationsRepository.getTransactionSum(id,"DEBIT","DEPOSIT"),">",recommendationsRepository.getTransactionSum(id,"DEBIT","WITHDRAW"));
+
+        return rule1.isFollowed() && (rule2_1.isFollowed() || rule2_2.isFollowed()) && rule3.isFollowed();
+    }
+
+    public boolean isUSER_OFRule(UUID userID, DynamicRule rule) {
+        String type = rule.getArguments().stream().filter(argsProdType::contains).findAny().orElseThrow();
+        if (rule.getNegate()) {
+            return !recommendationsRepository.getUse(userID, type);
+        } else {
+            return recommendationsRepository.getUse(userID,type);
+        }
+    }
+
+    public boolean isACTIVE_USER_OFRule(UUID userID, DynamicRule rule) {
+        String type = rule.getArguments().stream().filter(argsProdType::contains).findAny().orElseThrow();
+        if (rule.getNegate()) {
+            return !recommendationsRepository.getActiveUse(userID, type);
+        } else {
+            return recommendationsRepository.getActiveUse(userID,type);
+        }
+    }
+    public boolean isTRANSACTION_SUM_COMPARERule(UUID userID, DynamicRule rule) {
+        String productType = rule.getArguments().stream().filter(argsProdType::contains).findAny().orElseThrow();
+        String transactionType = rule.getArguments().stream().filter(argsTransType::contains).findAny().orElseThrow();
+        String comparator = rule.getArguments().stream().filter(argsComparator::contains).findAny().orElseThrow();
+        String number = rule.getArguments().stream().filter(a -> a.matches("\\d+")).findAny().orElseThrow();
+        int value = recommendationsRepository.getTransactionSum(userID,productType,transactionType);
+        CompareRule compareRule = new CompareRule(value,comparator,Integer.parseInt(number));
+        if (rule.getNegate()) {
+            return !compareRule.isFollowed();
+        } else {
+            return compareRule.isFollowed();
+        }
+    }
+    public boolean isTRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAWRule(UUID userID, DynamicRule rule) {
+        String productType = rule.getArguments().stream().filter(argsProdType::contains).findAny().orElseThrow();
+        String comparator = rule.getArguments().stream().filter(argsComparator::contains).findAny().orElseThrow();
+        int valueDEPOSIT = recommendationsRepository.getTransactionSum(userID,productType,"DEPOSIT");
+        int valueWITHDRAW = recommendationsRepository.getTransactionSum(userID,productType,"WITHDRAW");
+        CompareRule compareRule = new CompareRule(valueDEPOSIT,comparator,valueWITHDRAW);
+        if (rule.getNegate()) {
+            return !compareRule.isFollowed();
+        } else {
+            return compareRule.isFollowed();
+        }
+    }
+}
