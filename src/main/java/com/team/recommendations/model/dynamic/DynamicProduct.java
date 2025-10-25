@@ -68,4 +68,24 @@ public class DynamicProduct {
                 ", rule=" + rule +
                 '}';
     }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public void setProduct_name(String product_name) {
+        this.product_name = product_name;
+    }
+
+    public void setProduct_id(UUID product_id) {
+        this.product_id = product_id;
+    }
+
+    public void setProduct_text(String product_text) {
+        this.product_text = product_text;
+    }
+
+    public void setRule(Collection<DynamicRule> rule) {
+        this.rule = rule;
+    }
 }
