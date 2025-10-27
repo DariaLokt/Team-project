@@ -1,8 +1,6 @@
 package com.team.recommendations.repository;
 
-import org.apache.catalina.startup.ClassLoaderFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.data.jdbc.JdbcRepositoriesAutoConfiguration;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -62,5 +60,45 @@ public class RecommendationsRepository {
         } else {
             return 0;
         }
+    }
+
+    public boolean checkUserName(String userName) {
+        Integer count = jdbcTemplate.queryForObject(
+                """
+                        SELECT COUNT(*) FROM users WHERE USERNAME = ?""",
+                Integer.class,
+                userName);
+        if (count != null) {
+            return count == 1;
+        } else {
+            return false;
+        }
+    }
+
+    public String getFullNameByUserName(String userName) {
+        String firstName = jdbcTemplate.queryForObject(
+                """
+                        SELECT first_name FROM users WHERE USERNAME = ?""",
+                String.class,
+                userName);
+        String lastName = jdbcTemplate.queryForObject(
+                """
+                        SELECT first_name FROM users WHERE USERNAME = ?""",
+                String.class,
+                userName);
+        if (firstName != null && lastName != null) {
+            return firstName + " " + lastName;
+        } else {
+            return null;
+        }
+    }
+
+    public UUID getIdByUserName(String userName) {
+        UUID id = jdbcTemplate.queryForObject(
+                """
+                        SELECT id FROM USERS WHERE USERNAME = ?""",
+                UUID.class,
+                userName);
+        return id;
     }
 }
