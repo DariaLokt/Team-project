@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,6 +45,7 @@ public class DynamicRecommendationService {
             .build();
 
     @Cacheable("recommendations")
+    @Transactional
     public Collection<Recommendation> getRecommendations(UUID userID) {
         logger.info("The method for creating recommendations was invoked");
         long start = System.nanoTime();

@@ -1,9 +1,13 @@
 package com.team.recommendations.repository;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -75,21 +79,21 @@ public class RecommendationsRepository {
         }
     }
 
-    public String getFullNameByUserName(String userName) {
-        String firstName = jdbcTemplate.queryForObject(
-                """
-                        SELECT first_name FROM users WHERE USERNAME = ?""",
-                String.class,
-                userName);
-        String lastName = jdbcTemplate.queryForObject(
-                """
-                        SELECT first_name FROM users WHERE USERNAME = ?""",
-                String.class,
-                userName);
-        if (firstName != null && lastName != null) {
-            return firstName + " " + lastName;
-        } else {
-            return null;
+    public Optional<String> getFullNameByUserName(String userName) {
+        try {
+            String firstName = jdbcTemplate.queryForObject(
+                    """
+                            SELECT first_name FROM users WHERE USERNAME = ?""",
+                    String.class,
+                    userName);
+            String lastName = jdbcTemplate.queryForObject(
+                    """
+                            SELECT last_name FROM users WHERE USERNAME = ?""",
+                    String.class,
+                    userName);
+            return Optional.of(firstName + " " + lastName);
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
         }
     }
 

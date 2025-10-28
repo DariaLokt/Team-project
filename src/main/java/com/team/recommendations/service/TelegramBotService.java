@@ -12,9 +12,11 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 
 @Service
@@ -50,6 +52,9 @@ public class TelegramBotService implements UpdatesListener {
                 if (!telegramBotUsersRepository.existsById(chatId)) {
                     handleNewUser(chatId);
                 }
+                if (!messageText.isEmpty()) {
+                    sendMessage(chatId,"Ok");
+                }
                 if (messageText.startsWith("/recommend")) {
                     handleRecommendCommand(chatId, messageText);
                 }
@@ -60,20 +65,18 @@ public class TelegramBotService implements UpdatesListener {
 
     private void handleRecommendCommand(Long chatId, String messageText) {
         logger.info("Method for handling /recommend was invoked");
-        sendMessage(chatId,"hahahahahahaah");
         String userName = getUserNameFromMessage(messageText);
-        if (userName == null) {
+        if (userName == null || userName.isEmpty()) {
             sendMessage(chatId,"Введите user name");
             return;
         }
         saveUserNameToTelegramRepository(chatId,userName);
-        sendRecommendations(chatId, userName);
     }
 
     private void sendRecommendations(Long chatId, String userName) {
-        if (recommendationsRepository.getFullNameByUserName(userName) != null) {
-            String firstAndLastNames = recommendationsRepository.getFullNameByUserName(userName);
-            sendMessage(chatId, "Здравствуйте " + firstAndLastNames);
+        Optional<String> fullNameOpt = recommendationsRepository.getFullNameByUserName(userName);
+        if (fullNameOpt.isPresent()) {
+            sendMessage(chatId, "Здравствуйте " + fullNameOpt.get());
         } else {
             sendMessage(chatId,"Вашей информации нет в базе");
             return;
@@ -96,6 +99,7 @@ public class TelegramBotService implements UpdatesListener {
         user.setUserName(userName);
         telegramBotUsersRepository.save(user);
         logger.info("Username '{}' saved for chat_id: {}", userName, chatId);
+        sendRecommendations(chatId,userName);
     }
 
     private String getUserNameFromMessage(String messageText) {
