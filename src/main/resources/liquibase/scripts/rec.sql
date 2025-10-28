@@ -18,3 +18,10 @@ CREATE TABLE rule (
 
 -- changeset dlok:2
 ALTER TABLE rule ALTER COLUMN arguments TYPE TEXT[] USING arguments::text[];
+
+-- changeset dlok:3
+CREATE TABLE telegram_bot_users (
+    chat_id BIGINT PRIMARY KEY,
+    given_instructions BOOL,
+    user_name VARCHAR(255)
+);

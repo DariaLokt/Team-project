@@ -3,7 +3,6 @@ package com.team.recommendations.model.dynamic;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.UUID;

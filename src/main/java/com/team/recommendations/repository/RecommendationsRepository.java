@@ -1,11 +1,13 @@
 package com.team.recommendations.repository;
 
-import org.apache.catalina.startup.ClassLoaderFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.data.jdbc.JdbcRepositoriesAutoConfiguration;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -62,5 +64,45 @@ public class RecommendationsRepository {
         } else {
             return 0;
         }
+    }
+
+    public boolean checkUserName(String userName) {
+        Integer count = jdbcTemplate.queryForObject(
+                """
+                        SELECT COUNT(*) FROM users WHERE USERNAME = ?""",
+                Integer.class,
+                userName);
+        if (count != null) {
+            return count == 1;
+        } else {
+            return false;
+        }
+    }
+
+    public Optional<String> getFullNameByUserName(String userName) {
+        try {
+            String firstName = jdbcTemplate.queryForObject(
+                    """
+                            SELECT first_name FROM users WHERE USERNAME = ?""",
+                    String.class,
+                    userName);
+            String lastName = jdbcTemplate.queryForObject(
+                    """
+                            SELECT last_name FROM users WHERE USERNAME = ?""",
+                    String.class,
+                    userName);
+            return Optional.of(firstName + " " + lastName);
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
+    }
+
+    public UUID getIdByUserName(String userName) {
+        UUID id = jdbcTemplate.queryForObject(
+                """
+                        SELECT id FROM USERS WHERE USERNAME = ?""",
+                UUID.class,
+                userName);
+        return id;
     }
 }
