@@ -14,6 +14,7 @@ import com.team.recommendations.repository.StatsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,13 +67,13 @@ public class DynamicRecommendationService {
                 }
             }
             if (!ruleAbidance.contains(false)) {
-                product.getRule().stream()
-                        .forEach(this::countRuleApplications);
+                asyncCountRule(product);
                 Recommendation recommendation = new Recommendation(product.getProduct_name(), product.getProduct_id(), product.getProduct_text());
                 recommendations.add(recommendation);
                 logger.info("Product added for user: {}", userID);
             } else if (String.valueOf(product.getProduct_id()).equals("59efc529-2fff-41af-baff-90ccd7402925")) {
                 if (dealWithTopSavings(userID)) {
+                    asyncCountRule(product);
                     Recommendation recommendation = new Recommendation(product.getProduct_name(), product.getProduct_id(), product.getProduct_text());
                     recommendations.add(recommendation);
                     logger.info("Top Saving added through dealWith for user: {}", userID);
@@ -86,16 +87,25 @@ public class DynamicRecommendationService {
         return recommendations;
     }
 
-    private void countRuleApplications(DynamicRule dynamicRule) {
-        if (statsRepository.existsById(dynamicRule.getId())) {
-            long count = statsRepository.findById(dynamicRule.getId()).get().getCount() + 1L;
-            statsRepository.changeCounter(dynamicRule.getId(),count);
-            logger.info("Change counter was applied");
-        } else {
-            RuleCounter newCounter = new RuleCounter();
-            newCounter.setRule_id(dynamicRule.getId());
-            newCounter.setCount(1L);
-            statsRepository.save(newCounter);
+    @Async
+    public void asyncCountRule(DynamicProduct dynamicProduct)
+    {
+        countRuleApplications(dynamicProduct);
+    }
+
+    private void countRuleApplications(DynamicProduct dynamicProduct) {
+        Collection<DynamicRule> rules = dynamicProduct.getRule();
+        for (DynamicRule dynamicRule : rules) {
+            if (statsRepository.existsById(dynamicRule.getId())) {
+                long count = statsRepository.findById(dynamicRule.getId()).get().getCount() + 1L;
+                statsRepository.changeCounter(dynamicRule.getId(), count);
+                logger.info("Change counter was applied");
+            } else {
+                RuleCounter newCounter = new RuleCounter();
+                newCounter.setRule_id(dynamicRule.getId());
+                newCounter.setCount(1L);
+                statsRepository.save(newCounter);
+            }
         }
     }
 
@@ -157,5 +167,10 @@ public class DynamicRecommendationService {
         } else {
             return compareRule.isFollowed();
         }
+    }
+
+    public void clearManualCache() {
+        cache.invalidateAll();
+        logger.info("Manual cache was cleared");
     }
 }
