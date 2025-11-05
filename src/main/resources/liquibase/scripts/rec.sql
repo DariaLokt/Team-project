@@ -25,3 +25,9 @@ CREATE TABLE telegram_bot_users (
     given_instructions BOOL,
     user_name VARCHAR(255)
 );
+
+-- changeset dlok:4
+CREATE TABLE stats (
+    rule_id UUID PRIMARY KEY REFERENCES rule (id),
+    count BIGINT
+);

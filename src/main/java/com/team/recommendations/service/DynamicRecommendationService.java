@@ -4,14 +4,17 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.team.recommendations.model.dynamic.DynamicProduct;
 import com.team.recommendations.model.dynamic.DynamicRule;
+import com.team.recommendations.model.dynamic.RuleCounter;
 import com.team.recommendations.model.recommendations.Recommendation;
 import com.team.recommendations.model.rules.CompareRule;
 import com.team.recommendations.model.rules.IfUsedRule;
 import com.team.recommendations.repository.DynamicProductRepository;
 import com.team.recommendations.repository.RecommendationsRepository;
+import com.team.recommendations.repository.StatsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,15 +28,17 @@ import java.util.concurrent.TimeUnit;
 public class DynamicRecommendationService {
     private final DynamicProductRepository dynamicProductRepository;
     private final RecommendationsRepository recommendationsRepository;
+    private final StatsRepository statsRepository;
     private final Collection<String> argsProdType;
     private final Collection<String> argsTransType;
     private final Collection<String> argsComparator;
 
     Logger logger = LoggerFactory.getLogger(DynamicRecommendationService.class);
 
-    public DynamicRecommendationService(DynamicProductRepository dynamicProductRepository, RecommendationsRepository recommendationsRepository) {
+    public DynamicRecommendationService(DynamicProductRepository dynamicProductRepository, RecommendationsRepository recommendationsRepository, StatsRepository statsRepository) {
         this.dynamicProductRepository = dynamicProductRepository;
         this.recommendationsRepository = recommendationsRepository;
+        this.statsRepository = statsRepository;
         this.argsProdType = List.of("DEBIT","CREDIT","INVEST","SAVING");
         this.argsTransType = List.of("WITHDRAW","DEPOSIT");
         this.argsComparator = List.of(">","<","=",">=","<=");
@@ -62,11 +67,13 @@ public class DynamicRecommendationService {
                 }
             }
             if (!ruleAbidance.contains(false)) {
+                asyncCountRule(product);
                 Recommendation recommendation = new Recommendation(product.getProduct_name(), product.getProduct_id(), product.getProduct_text());
                 recommendations.add(recommendation);
                 logger.info("Product added for user: {}", userID);
             } else if (String.valueOf(product.getProduct_id()).equals("59efc529-2fff-41af-baff-90ccd7402925")) {
                 if (dealWithTopSavings(userID)) {
+                    asyncCountRule(product);
                     Recommendation recommendation = new Recommendation(product.getProduct_name(), product.getProduct_id(), product.getProduct_text());
                     recommendations.add(recommendation);
                     logger.info("Top Saving added through dealWith for user: {}", userID);
@@ -78,6 +85,28 @@ public class DynamicRecommendationService {
         long timeElapsed = finish - start;
         logger.info("Time elapsed for get recommendations function: {}", timeElapsed);
         return recommendations;
+    }
+
+    @Async
+    public void asyncCountRule(DynamicProduct dynamicProduct)
+    {
+        countRuleApplications(dynamicProduct);
+    }
+
+    private void countRuleApplications(DynamicProduct dynamicProduct) {
+        Collection<DynamicRule> rules = dynamicProduct.getRule();
+        for (DynamicRule dynamicRule : rules) {
+            if (statsRepository.existsById(dynamicRule.getId())) {
+                long count = statsRepository.findById(dynamicRule.getId()).get().getCount() + 1L;
+                statsRepository.changeCounter(dynamicRule.getId(), count);
+                logger.info("Change counter was applied");
+            } else {
+                RuleCounter newCounter = new RuleCounter();
+                newCounter.setRule_id(dynamicRule.getId());
+                newCounter.setCount(1L);
+                statsRepository.save(newCounter);
+            }
+        }
     }
 
     private boolean dealWithTopSavings(UUID id) {
@@ -138,5 +167,10 @@ public class DynamicRecommendationService {
         } else {
             return compareRule.isFollowed();
         }
+    }
+
+    public void clearManualCache() {
+        cache.invalidateAll();
+        logger.info("Manual cache was cleared");
     }
 }
