@@ -1,14 +1,19 @@
 package com.team.recommendations.controller;
 
 import com.team.recommendations.model.dynamic.Data;
-import com.team.recommendations.model.dynamic.DynamicProduct;
-import com.team.recommendations.model.stats.Stats;
-import com.team.recommendations.service.DynamicService;
-import com.team.recommendations.service.StatsService;
+import com.team.recommendations.model.dynamic.DynamicProductDto;
+import com.team.recommendations.model.stats.StatsDto;
+import com.team.recommendations.service.rules.DynamicService;
+import com.team.recommendations.service.rules.StatsService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+@RequestMapping("/rule")
+@Tag(name = "Динамические правила", description = "Методы для работы с продуктами с динамическими правилами")
 @RestController
 public class DynamicController {
     private final DynamicService dynamicService;
@@ -19,27 +24,51 @@ public class DynamicController {
         this.statsService = statsService;
     }
 
-    @GetMapping("/rule")
+    @Operation(operationId = "getAllProducts",
+            summary = "Получение всех продуктов с динамическими правилами",
+            tags = {"Динамические правила"})
+    @ApiResponse(responseCode = "200", description = "OK")
+    @ApiResponse(responseCode = "404", description = "Not found")
+    @GetMapping
     public Data getAllProducts() {
         return new Data(dynamicService.getAllProducts());
     }
 
-    @PostMapping("/rule")
-    public DynamicProduct addProduct(@RequestBody DynamicProduct product) {
+    @Operation(operationId = "addProduct",
+            summary = "Добавление нового продукта с динамическими правилами",
+            tags = {"Динамические правила"})
+    @ApiResponse(responseCode = "201", description = "Created")
+    @PostMapping
+    public DynamicProductDto addProduct(@RequestBody DynamicProductDto product) {
         return dynamicService.addProduct(product);
     }
 
-    @DeleteMapping("/rule/{product_id}")
+    @Operation(operationId = "deleteProduct",
+            summary = "Удаление продукта с динамическими правилами",
+            tags = {"Динамические правила"})
+    @ApiResponse(responseCode = "200", description = "OK")
+    @ApiResponse(responseCode = "404", description = "Not found")
+    @DeleteMapping("/{product_id}")
     public void deleteProduct(@PathVariable UUID product_id) {
         dynamicService.deleteProduct(product_id);
     }
 
-    @GetMapping("/rule/stats")
-    public Stats getRuleStats() {
+    @Operation(operationId = "getRuleStats",
+            summary = "Получение статистики по использованию динамических правил",
+            tags = {"Динамические правила"})
+    @ApiResponse(responseCode = "200", description = "OK")
+    @ApiResponse(responseCode = "404", description = "Not found")
+    @GetMapping("/stats")
+    public StatsDto getRuleStats() {
         return statsService.getAllStats();
     }
 
-    @DeleteMapping("/rule/stats")
+    @Operation(operationId = "deleteRuleStats",
+            summary = "Обнуление статистики по использованию динамических правил",
+            tags = {"Динамические правила"})
+    @ApiResponse(responseCode = "200", description = "OK")
+    @ApiResponse(responseCode = "404", description = "Not found")
+    @DeleteMapping("/stats")
     public void deleteRuleStats() {
         statsService.deleteStats();
     }

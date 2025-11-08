@@ -1,11 +1,22 @@
 package com.team.recommendations.model.recommendations;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.util.Collection;
 import java.util.Objects;
 import java.util.UUID;
 
+@Schema(description = "Модель данных ответа на запрос рекомендации")
 public class RecommendationResponse {
+    @Schema(
+            type = "uuid",
+            description = "ID пользователя"
+    )
     private final UUID userId;
+    @Schema(
+            type = "array",
+            description = "Набор рекомендаций"
+    )
     private final Collection<Recommendation> recommendations;
 
     public RecommendationResponse(UUID userId, Collection<Recommendation> recommendations) {

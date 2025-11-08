@@ -8,6 +8,7 @@ import com.team.recommendations.model.rules.CompareRule;
 import com.team.recommendations.model.rules.IfUsedRule;
 import com.team.recommendations.repository.DynamicProductRepository;
 import com.team.recommendations.repository.RecommendationsRepository;
+import com.team.recommendations.service.rules.StatsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -68,17 +69,12 @@ public class DynamicRecommendationService {
                 }
             }
             if (!ruleAbidance.contains(false)) {
-                countRuleApplications(product);
+                countRuleApplications(product.getRule());
                 Recommendation recommendation = new Recommendation(product.getProductName(), product.getProductId(), product.getProductText());
                 recommendations.add(recommendation);
                 logger.info("Product added for user: {}", userID);
             } else if (product.getProductId().equals(TOP_SAVINGS_PRODUCT_ID)) {
-                if (dealWithTopSavings(userID)) {
-                    countRuleApplications(product);
-                    Recommendation recommendation = new Recommendation(product.getProductName(), product.getProductId(), product.getProductText());
-                    recommendations.add(recommendation);
-                    logger.info("Top Saving added through dealWith for user: {}", userID);
-                }
+                dealWithTopSavings(userID,recommendations);
             }
         }
         long finish = System.nanoTime();
@@ -87,8 +83,7 @@ public class DynamicRecommendationService {
         return recommendations;
     }
 
-    private void countRuleApplications(DynamicProduct dynamicProduct) {
-        Collection<DynamicRule> rules = dynamicProduct.getRule();
+    private void countRuleApplications(Collection<DynamicRule> rules) {
         for (DynamicRule dynamicRule : rules) {
             if (statsService.isPresentById(dynamicRule.getId())) {
                 long count = statsService.getCountById(dynamicRule.getId()) + 1L;
@@ -103,7 +98,15 @@ public class DynamicRecommendationService {
         }
     }
 
-    private boolean dealWithTopSavings(UUID id) {
+    private void dealWithTopSavings(UUID id, Collection<Recommendation> recommendations) {
+        logger.info("DealWithTopSavings invoked");
+        boolean alreadyExists = recommendations.stream()
+                .anyMatch(r -> r.getId().equals(TOP_SAVINGS_PRODUCT_ID));
+
+        if (alreadyExists) {
+            logger.info("DealWithTopSavings: top savings was already recommended");
+            return;
+        }
 //        rule1
         IfUsedRule rule1 = new IfUsedRule(recommendationsRepository.getUse(id,"DEBIT"),true);
 //        rule2
@@ -112,15 +115,35 @@ public class DynamicRecommendationService {
 //        rule3
         CompareRule rule3 = new CompareRule(recommendationsRepository.getTransactionSum(id,"DEBIT","DEPOSIT"),">",recommendationsRepository.getTransactionSum(id,"DEBIT","WITHDRAW"));
 
-        logger.info("DealWithTopSavings invoked");
-        return rule1.isFollowed() && (rule2_1.isFollowed() || rule2_2.isFollowed()) && rule3.isFollowed();
+        if (rule1.isFollowed() && (rule2_1.isFollowed() || rule2_2.isFollowed()) && rule3.isFollowed()) {
+            DynamicProduct topSavings = dynamicProductRepository.findByProductId(TOP_SAVINGS_PRODUCT_ID).orElseThrow();
+
+            Collection<DynamicRule> followedRules = new ArrayList<>();
+            if (rule1.isFollowed()) followedRules.add(findRuleByPattern(topSavings, "USER_OF", List.of("DEBIT")));
+            if (rule2_1.isFollowed()) followedRules.add(findRuleByPattern(topSavings, "TRANSACTION_SUM_COMPARE", List.of("DEBIT","DEPOSIT",">=","50000")));
+            if (rule2_2.isFollowed()) followedRules.add(findRuleByPattern(topSavings, "TRANSACTION_SUM_COMPARE", List.of("SAVING","DEPOSIT",">=","50000")));
+            if (rule3.isFollowed()) followedRules.add(findRuleByPattern(topSavings, "TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW", List.of("DEBIT",">")));
+
+            countRuleApplications(followedRules);
+
+            Recommendation recommendation = new Recommendation(topSavings.getProductName(), topSavings.getProductId(), topSavings.getProductText());
+            recommendations.add(recommendation);
+            logger.info("Top Saving added through dealWith for user: {}", id);
+        }
+    }
+    private DynamicRule findRuleByPattern(DynamicProduct product, String query, List<String> arguments) {
+        return product.getRule().stream()
+                .filter(r -> r.getQuery().equals(query) && r.getArguments().equals(arguments))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Rule not found: " + query + " " + arguments));
     }
 
     private String extractArgument(DynamicRule rule, Collection<String> arguments) {
         return rule.getArguments().stream()
                 .filter(arguments::contains)
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Правило было составлено неверно"));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid arguments for rule " + rule.getId() +
+                        ". Expected one of: " + arguments + ", got: " + rule.getArguments()));
     }
 
     public boolean isUSER_OFRule(UUID userID, DynamicRule rule) {
