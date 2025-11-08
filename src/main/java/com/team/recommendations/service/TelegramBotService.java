@@ -12,7 +12,6 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
@@ -51,9 +50,6 @@ public class TelegramBotService implements UpdatesListener {
                 Long chatId = update.message().chat().id();
                 if (!telegramBotUsersRepository.existsById(chatId)) {
                     handleNewUser(chatId);
-                }
-                if (!messageText.isEmpty()) {
-                    sendMessage(chatId,"Ok");
                 }
                 if (messageText.startsWith("/recommend")) {
                     handleRecommendCommand(chatId, messageText);

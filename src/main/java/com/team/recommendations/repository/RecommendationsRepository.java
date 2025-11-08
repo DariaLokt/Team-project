@@ -1,108 +1,117 @@
 package com.team.recommendations.repository;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Repository
 public class RecommendationsRepository {
     private final JdbcTemplate jdbcTemplate;
+    private final Cache<String, Object> resultsCache;
 
     public RecommendationsRepository(@Qualifier("recommendationsJdbcTemplate") JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+        this.resultsCache = Caffeine.newBuilder()
+                .maximumSize(5000)
+                .expireAfterWrite(10, TimeUnit.MINUTES)
+                .build();
     }
 
-    public boolean getUse(UUID user_id, String productType) {
-        Integer count = jdbcTemplate.queryForObject(
-                """
-                        SELECT COUNT (p.TYPE) AS Count
-                        FROM transactions t
-                        INNER JOIN products p ON t.product_id = p.id
-                        WHERE t.user_id = ? AND p.TYPE = ?""",
-                Integer.class,
-                user_id, productType);
-        if (count != null) {
-            return count != 0;
-        } else {
-            return false;
-        }
+    public Cache<String, Object> getResultsCache() {
+        return resultsCache;
     }
 
-    public boolean getActiveUse(UUID user_id, String productType) {
-        Integer count = jdbcTemplate.queryForObject(
-                """
-                        SELECT COUNT (p.TYPE) AS Count
-                        FROM transactions t
-                        INNER JOIN products p ON t.product_id = p.id
-                        WHERE t.user_id = ? AND p.TYPE = ?""",
-                Integer.class,
-                user_id, productType);
-        if (count != null) {
-            return count >= 5;
-        } else {
-            return false;
-        }
+    public boolean getUse(UUID userId, String productType) {
+        String cacheKey = "getUse:" + userId + ":" + productType;
+        return (Boolean) resultsCache.get(cacheKey, key -> {
+            Integer count = jdbcTemplate.queryForObject(
+                    """
+                            SELECT COUNT (p.TYPE) AS Count
+                            FROM transactions t
+                            INNER JOIN products p ON t.product_id = p.id
+                            WHERE t.user_id = ? AND p.TYPE = ?""",
+                    Integer.class,
+                    userId, productType);
+            return count != null && count != 0;
+        });
     }
 
-    public int getTransactionSum(UUID user_id, String productType, String transactionType){
-        Integer transactionSum = jdbcTemplate.queryForObject(
-                """
-                        SELECT SUM(t.amount)
-                        FROM transactions t
-                        INNER JOIN products p ON t.product_id = p.id
-                        WHERE t.user_id = ? AND p.TYPE = ? AND t.TYPE = ?""",
-                Integer.class,
-                user_id, productType, transactionType);
-        if (transactionSum != null) {
-            return transactionSum;
-        } else {
-            return 0;
-        }
+    public boolean getActiveUse(UUID userId, String productType) {
+        String cacheKey = "getActiveUse:" + userId + ":" + productType;
+        return (Boolean) resultsCache.get(cacheKey, key -> {
+            Integer count = jdbcTemplate.queryForObject(
+                    """
+                            SELECT COUNT (p.TYPE) AS Count
+                            FROM transactions t
+                            INNER JOIN products p ON t.product_id = p.id
+                            WHERE t.user_id = ? AND p.TYPE = ?""",
+                    Integer.class,
+                    userId, productType);
+            return count != null && count >= 5;
+        });
+    }
+
+    public int getTransactionSum(UUID userId, String productType, String transactionType){
+        String cacheKey = "getTransactionSum:" + userId + ":" + productType + ":" + transactionType;
+        return (Integer) resultsCache.get(cacheKey, key -> {
+            Integer transactionSum = jdbcTemplate.queryForObject(
+                    """
+                            SELECT SUM(t.amount)
+                            FROM transactions t
+                            INNER JOIN products p ON t.product_id = p.id
+                            WHERE t.user_id = ? AND p.TYPE = ? AND t.TYPE = ?""",
+                    Integer.class,
+                    userId, productType, transactionType);
+            return transactionSum != null ? transactionSum : 0;
+        });
     }
 
     public boolean checkUserName(String userName) {
-        Integer count = jdbcTemplate.queryForObject(
-                """
-                        SELECT COUNT(*) FROM users WHERE USERNAME = ?""",
-                Integer.class,
-                userName);
-        if (count != null) {
-            return count == 1;
-        } else {
-            return false;
-        }
+        String cacheKey = "checkUserName:" + userName;
+        return (Boolean) resultsCache.get(cacheKey, key -> {
+            Integer count = jdbcTemplate.queryForObject(
+                    """
+                            SELECT COUNT(*) FROM users WHERE USERNAME = ?""",
+                    Integer.class,
+                    userName);
+            return count != null && count == 1;
+        });
     }
 
     public Optional<String> getFullNameByUserName(String userName) {
-        try {
-            String firstName = jdbcTemplate.queryForObject(
-                    """
-                            SELECT first_name FROM users WHERE USERNAME = ?""",
-                    String.class,
-                    userName);
-            String lastName = jdbcTemplate.queryForObject(
-                    """
-                            SELECT last_name FROM users WHERE USERNAME = ?""",
-                    String.class,
-                    userName);
-            return Optional.of(firstName + " " + lastName);
-        } catch (EmptyResultDataAccessException e) {
-            return Optional.empty();
-        }
+        String cacheKey = "getFullNameByUserName:" + userName;
+        return (Optional<String>) resultsCache.get(cacheKey, key -> {
+            try {
+                String firstName = jdbcTemplate.queryForObject(
+                        """
+                                SELECT first_name FROM users WHERE USERNAME = ?""",
+                        String.class,
+                        userName);
+                String lastName = jdbcTemplate.queryForObject(
+                        """
+                                SELECT last_name FROM users WHERE USERNAME = ?""",
+                        String.class,
+                        userName);
+                return Optional.of(firstName + " " + lastName);
+            } catch (EmptyResultDataAccessException e) {
+                return Optional.empty();
+            }
+        });
     }
 
     public UUID getIdByUserName(String userName) {
-        UUID id = jdbcTemplate.queryForObject(
+        String cacheKey = "getIdByUserName:" + userName;
+        return (UUID) resultsCache.get(cacheKey, key -> jdbcTemplate.queryForObject(
                 """
                         SELECT id FROM USERS WHERE USERNAME = ?""",
                 UUID.class,
-                userName);
-        return id;
+                userName));
     }
 }

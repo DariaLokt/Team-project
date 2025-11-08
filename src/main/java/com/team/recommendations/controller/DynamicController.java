@@ -2,9 +2,9 @@ package com.team.recommendations.controller;
 
 import com.team.recommendations.model.dynamic.Data;
 import com.team.recommendations.model.dynamic.DynamicProduct;
-import com.team.recommendations.model.dynamic.Stats;
-import com.team.recommendations.repository.StatsRepository;
+import com.team.recommendations.model.stats.Stats;
 import com.team.recommendations.service.DynamicService;
+import com.team.recommendations.service.StatsService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -12,11 +12,11 @@ import java.util.UUID;
 @RestController
 public class DynamicController {
     private final DynamicService dynamicService;
-    private final StatsRepository statsRepository;
+    private final StatsService statsService;
 
-    public DynamicController(DynamicService dynamicService, StatsRepository statsRepository) {
+    public DynamicController(DynamicService dynamicService, StatsService statsService) {
         this.dynamicService = dynamicService;
-        this.statsRepository = statsRepository;
+        this.statsService = statsService;
     }
 
     @GetMapping("/rule")
@@ -36,6 +36,11 @@ public class DynamicController {
 
     @GetMapping("/rule/stats")
     public Stats getRuleStats() {
-        return new Stats(statsRepository.findAll());
+        return statsService.getAllStats();
+    }
+
+    @DeleteMapping("/rule/stats")
+    public void deleteRuleStats() {
+        statsService.deleteStats();
     }
 }

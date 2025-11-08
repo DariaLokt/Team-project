@@ -1,55 +1,54 @@
 package com.team.recommendations.service;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.team.recommendations.model.dynamic.DynamicProduct;
-import com.team.recommendations.model.dynamic.DynamicRule;
-import com.team.recommendations.model.dynamic.RuleCounter;
+import com.team.recommendations.model.dynamic.*;
+import com.team.recommendations.model.dynamic.Comparator;
+import com.team.recommendations.model.stats.RuleCounter;
 import com.team.recommendations.model.recommendations.Recommendation;
 import com.team.recommendations.model.rules.CompareRule;
 import com.team.recommendations.model.rules.IfUsedRule;
 import com.team.recommendations.repository.DynamicProductRepository;
 import com.team.recommendations.repository.RecommendationsRepository;
-import com.team.recommendations.repository.StatsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class DynamicRecommendationService {
     private final DynamicProductRepository dynamicProductRepository;
     private final RecommendationsRepository recommendationsRepository;
-    private final StatsRepository statsRepository;
-    private final Collection<String> argsProdType;
-    private final Collection<String> argsTransType;
-    private final Collection<String> argsComparator;
+    private final StatsService statsService;
 
-    Logger logger = LoggerFactory.getLogger(DynamicRecommendationService.class);
+    private final Collection<String> productTypes;
+    private final Collection<String> transactionTypes;
+    private final Collection<String> comparators;
 
-    public DynamicRecommendationService(DynamicProductRepository dynamicProductRepository, RecommendationsRepository recommendationsRepository, StatsRepository statsRepository) {
+    private static final UUID TOP_SAVINGS_PRODUCT_ID = UUID.fromString("59efc529-2fff-41af-baff-90ccd7402925");
+    private static final String QUERY_USER_OF = "USER_OF";
+    private static final String QUERY_ACTIVE_USER_OF = "ACTIVE_USER_OF";
+    private static final String QUERY_TRANSACTION_SUM_COMPARE = "TRANSACTION_SUM_COMPARE";
+    private static final String QUERY_TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW = "TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW";
+
+    private final Logger logger = LoggerFactory.getLogger(DynamicRecommendationService.class);
+
+    public DynamicRecommendationService(DynamicProductRepository dynamicProductRepository, RecommendationsRepository recommendationsRepository, StatsService statsService) {
         this.dynamicProductRepository = dynamicProductRepository;
         this.recommendationsRepository = recommendationsRepository;
-        this.statsRepository = statsRepository;
-        this.argsProdType = List.of("DEBIT","CREDIT","INVEST","SAVING");
-        this.argsTransType = List.of("WITHDRAW","DEPOSIT");
-        this.argsComparator = List.of(">","<","=",">=","<=");
+        this.statsService = statsService;
+        this.productTypes = Arrays.stream(ProductType.values())
+                .map(ProductType::getValue)
+                .collect(Collectors.toList());
+        this.transactionTypes = Arrays.stream(TransactionType.values())
+                .map(TransactionType::getValue)
+                .collect(Collectors.toList());
+        this.comparators = Arrays.stream(Comparator.values())
+                .map(Comparator::getSymbol)
+                .collect(Collectors.toList());
     }
 
-    Cache<UUID, Collection<Recommendation>> cache = Caffeine.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(10, TimeUnit.MINUTES)
-            .build();
-
-    @Cacheable("recommendations")
     @Transactional
     public Collection<Recommendation> getRecommendations(UUID userID) {
         logger.info("The method for creating recommendations was invoked");
@@ -59,52 +58,47 @@ public class DynamicRecommendationService {
             Collection<Boolean> ruleAbidance = new ArrayList<>();
             for (DynamicRule rule : product.getRule()) {
                 switch (rule.getQuery()) {
-                    case "USER_OF" -> ruleAbidance.add(isUSER_OFRule(userID, rule));
-                    case "ACTIVE_USER_OF" -> ruleAbidance.add(isACTIVE_USER_OFRule(userID,rule));
-                    case "TRANSACTION_SUM_COMPARE" -> ruleAbidance.add(isTRANSACTION_SUM_COMPARERule(userID,rule));
-                    case "TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW" -> ruleAbidance.add(isTRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAWRule(userID,rule));
-                    default -> throw new RuntimeException("No such query");
+                    case QUERY_USER_OF -> ruleAbidance.add(isUSER_OFRule(userID, rule));
+                    case QUERY_ACTIVE_USER_OF -> ruleAbidance.add(isACTIVE_USER_OFRule(userID,rule));
+                    case QUERY_TRANSACTION_SUM_COMPARE -> ruleAbidance.add(isTRANSACTION_SUM_COMPARERule(userID,rule));
+                    case QUERY_TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW -> ruleAbidance.add(isTRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAWRule(userID,rule));
+                    default -> throw new IllegalArgumentException(
+                            "Unknown query type: " + rule.getQuery() + " for rule ID: " + rule.getId()
+                    );
                 }
             }
             if (!ruleAbidance.contains(false)) {
-                asyncCountRule(product);
-                Recommendation recommendation = new Recommendation(product.getProduct_name(), product.getProduct_id(), product.getProduct_text());
+                countRuleApplications(product);
+                Recommendation recommendation = new Recommendation(product.getProductName(), product.getProductId(), product.getProductText());
                 recommendations.add(recommendation);
                 logger.info("Product added for user: {}", userID);
-            } else if (String.valueOf(product.getProduct_id()).equals("59efc529-2fff-41af-baff-90ccd7402925")) {
+            } else if (product.getProductId().equals(TOP_SAVINGS_PRODUCT_ID)) {
                 if (dealWithTopSavings(userID)) {
-                    asyncCountRule(product);
-                    Recommendation recommendation = new Recommendation(product.getProduct_name(), product.getProduct_id(), product.getProduct_text());
+                    countRuleApplications(product);
+                    Recommendation recommendation = new Recommendation(product.getProductName(), product.getProductId(), product.getProductText());
                     recommendations.add(recommendation);
                     logger.info("Top Saving added through dealWith for user: {}", userID);
                 }
             }
         }
-        cache.put(userID,recommendations);
         long finish = System.nanoTime();
         long timeElapsed = finish - start;
         logger.info("Time elapsed for get recommendations function: {}", timeElapsed);
         return recommendations;
     }
 
-    @Async
-    public void asyncCountRule(DynamicProduct dynamicProduct)
-    {
-        countRuleApplications(dynamicProduct);
-    }
-
     private void countRuleApplications(DynamicProduct dynamicProduct) {
         Collection<DynamicRule> rules = dynamicProduct.getRule();
         for (DynamicRule dynamicRule : rules) {
-            if (statsRepository.existsById(dynamicRule.getId())) {
-                long count = statsRepository.findById(dynamicRule.getId()).get().getCount() + 1L;
-                statsRepository.changeCounter(dynamicRule.getId(), count);
+            if (statsService.isPresentById(dynamicRule.getId())) {
+                long count = statsService.getCountById(dynamicRule.getId()) + 1L;
+                statsService.changeCounter(dynamicRule.getId(),count);
                 logger.info("Change counter was applied");
             } else {
                 RuleCounter newCounter = new RuleCounter();
-                newCounter.setRule_id(dynamicRule.getId());
+                newCounter.setRuleId(dynamicRule.getId());
                 newCounter.setCount(1L);
-                statsRepository.save(newCounter);
+                statsService.saveNewCounter(newCounter);
             }
         }
     }
@@ -122,9 +116,16 @@ public class DynamicRecommendationService {
         return rule1.isFollowed() && (rule2_1.isFollowed() || rule2_2.isFollowed()) && rule3.isFollowed();
     }
 
+    private String extractArgument(DynamicRule rule, Collection<String> arguments) {
+        return rule.getArguments().stream()
+                .filter(arguments::contains)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Правило было составлено неверно"));
+    }
+
     public boolean isUSER_OFRule(UUID userID, DynamicRule rule) {
-        logger.info("Checked USER_OF for {} for product {} ", userID, rule.getProduct().getProduct_id());
-        String type = rule.getArguments().stream().filter(argsProdType::contains).findAny().orElseThrow();
+        logger.info("Checked USER_OF for {} for product {} ", userID, rule.getProduct().getProductId());
+        String type = extractArgument(rule,productTypes);
         if (rule.getNegate()) {
             return !recommendationsRepository.getUse(userID, type);
         } else {
@@ -133,8 +134,8 @@ public class DynamicRecommendationService {
     }
 
     public boolean isACTIVE_USER_OFRule(UUID userID, DynamicRule rule) {
-        logger.info("Checked ACTIVE_USER_OF for {} for product {} ", userID, rule.getProduct().getProduct_id());
-        String type = rule.getArguments().stream().filter(argsProdType::contains).findAny().orElseThrow();
+        logger.info("Checked ACTIVE_USER_OF for {} for product {} ", userID, rule.getProduct().getProductId());
+        String type = extractArgument(rule,productTypes);
         if (rule.getNegate()) {
             return !recommendationsRepository.getActiveUse(userID, type);
         } else {
@@ -142,10 +143,10 @@ public class DynamicRecommendationService {
         }
     }
     public boolean isTRANSACTION_SUM_COMPARERule(UUID userID, DynamicRule rule) {
-        logger.info("Checked TRANSACTION_SUM_COMPARE for {} for product {} ", userID, rule.getProduct().getProduct_id());
-        String productType = rule.getArguments().stream().filter(argsProdType::contains).findAny().orElseThrow();
-        String transactionType = rule.getArguments().stream().filter(argsTransType::contains).findAny().orElseThrow();
-        String comparator = rule.getArguments().stream().filter(argsComparator::contains).findAny().orElseThrow();
+        logger.info("Checked TRANSACTION_SUM_COMPARE for {} for product {} ", userID, rule.getProduct().getProductId());
+        String productType = extractArgument(rule,productTypes);
+        String transactionType = extractArgument(rule,transactionTypes);
+        String comparator = extractArgument(rule,comparators);
         String number = rule.getArguments().stream().filter(a -> a.matches("\\d+")).findAny().orElseThrow();
         int value = recommendationsRepository.getTransactionSum(userID,productType,transactionType);
         CompareRule compareRule = new CompareRule(value,comparator,Integer.parseInt(number));
@@ -156,9 +157,9 @@ public class DynamicRecommendationService {
         }
     }
     public boolean isTRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAWRule(UUID userID, DynamicRule rule) {
-        logger.info("Checked TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW for {} for product {} ", userID, rule.getProduct().getProduct_id());
-        String productType = rule.getArguments().stream().filter(argsProdType::contains).findAny().orElseThrow();
-        String comparator = rule.getArguments().stream().filter(argsComparator::contains).findAny().orElseThrow();
+        logger.info("Checked TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW for {} for product {} ", userID, rule.getProduct().getProductId());
+        String productType = extractArgument(rule,productTypes);
+        String comparator = extractArgument(rule,comparators);
         int valueDEPOSIT = recommendationsRepository.getTransactionSum(userID,productType,"DEPOSIT");
         int valueWITHDRAW = recommendationsRepository.getTransactionSum(userID,productType,"WITHDRAW");
         CompareRule compareRule = new CompareRule(valueDEPOSIT,comparator,valueWITHDRAW);
@@ -167,10 +168,5 @@ public class DynamicRecommendationService {
         } else {
             return compareRule.isFollowed();
         }
-    }
-
-    public void clearManualCache() {
-        cache.invalidateAll();
-        logger.info("Manual cache was cleared");
     }
 }

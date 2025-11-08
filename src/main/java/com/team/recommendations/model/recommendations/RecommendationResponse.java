@@ -5,16 +5,16 @@ import java.util.Objects;
 import java.util.UUID;
 
 public class RecommendationResponse {
-    private final UUID user_id;
+    private final UUID userId;
     private final Collection<Recommendation> recommendations;
 
-    public RecommendationResponse(UUID user_id, Collection<Recommendation> recommendations) {
-        this.user_id = user_id;
+    public RecommendationResponse(UUID userId, Collection<Recommendation> recommendations) {
+        this.userId = userId;
         this.recommendations = recommendations;
     }
 
-    public UUID getUser_id() {
-        return user_id;
+    public UUID getUserId() {
+        return userId;
     }
 
     public Collection<Recommendation> getRecommendations() {
@@ -25,18 +25,18 @@ public class RecommendationResponse {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         RecommendationResponse that = (RecommendationResponse) o;
-        return Objects.equals(user_id, that.user_id) && Objects.equals(recommendations, that.recommendations);
+        return Objects.equals(userId, that.userId) && Objects.equals(recommendations, that.recommendations);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(user_id, recommendations);
+        return Objects.hash(userId, recommendations);
     }
 
     @Override
     public String toString() {
         return "RecommendationResponse{" +
-                "user_id=" + user_id +
+                "user_id=" + userId +
                 ", recommendations=" + recommendations +
                 '}';
     }

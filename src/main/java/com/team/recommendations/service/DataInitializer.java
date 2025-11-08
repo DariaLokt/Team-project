@@ -90,9 +90,9 @@ public class DataInitializer implements CommandLineRunner {
 
     private DynamicProduct createDynamicProduct(String name, UUID id, String text) {
         DynamicProduct dynamicProduct = new DynamicProduct();
-        dynamicProduct.setProduct_id(id);
-        dynamicProduct.setProduct_name(name);
-        dynamicProduct.setProduct_text(text);
+        dynamicProduct.setProductId(id);
+        dynamicProduct.setProductName(name);
+        dynamicProduct.setProductText(text);
         return dynamicProduct;
     }
 

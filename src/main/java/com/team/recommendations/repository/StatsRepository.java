@@ -1,6 +1,6 @@
 package com.team.recommendations.repository;
 
-import com.team.recommendations.model.dynamic.RuleCounter;
+import com.team.recommendations.model.stats.RuleCounter;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
