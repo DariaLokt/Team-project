@@ -1,6 +1,5 @@
 package com.team.recommendations.model.dynamic;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.Collection;
@@ -10,7 +9,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "rule")
 public class DynamicRule {
-    @JsonIgnore
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -19,7 +17,6 @@ public class DynamicRule {
     private Collection<String> arguments;
     private Boolean negate;
 
-    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "product_id")
     private DynamicProduct product;

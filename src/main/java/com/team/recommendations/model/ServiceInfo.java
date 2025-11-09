@@ -1,9 +1,20 @@
 package com.team.recommendations.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.util.Objects;
 
+@Schema(description = "Модель данных о сервисе")
 public class ServiceInfo {
+    @Schema(
+            type = "string",
+            description = "Наименование сервиса"
+    )
     private String name;
+    @Schema(
+            type = "string",
+            description = "Версия сервиса"
+    )
     private String version;
 
     public ServiceInfo(String name, String version) {

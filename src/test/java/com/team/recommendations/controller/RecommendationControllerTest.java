@@ -1,36 +1,22 @@
 package com.team.recommendations.controller;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.team.recommendations.config.TestCacheConfig;
 import com.team.recommendations.config.TestConfig;
-import com.team.recommendations.model.dynamic.DynamicRule;
 import com.team.recommendations.model.recommendations.Recommendation;
-import com.team.recommendations.repository.RecommendationsRepository;
 import com.team.recommendations.service.DynamicRecommendationService;
-import com.team.recommendations.service.Invest500Service;
-import com.team.recommendations.service.SimpleCreditService;
-import com.team.recommendations.service.TopSavingService;
-import org.junit.jupiter.api.BeforeEach;
+import com.team.recommendations.service.rules.Invest500Service;
+import com.team.recommendations.service.rules.SimpleCreditService;
+import com.team.recommendations.service.rules.TopSavingService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;

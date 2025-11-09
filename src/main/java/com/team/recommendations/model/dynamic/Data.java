@@ -1,17 +1,28 @@
 package com.team.recommendations.model.dynamic;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.util.Collection;
 import java.util.Objects;
 
+@Schema(description = "Модель данных набора продуктов, рекомендованных пользователю")
 public class Data {
-    Collection<DynamicProduct> data;
+    @Schema(
+            type = "array",
+            description = "Набор продуктов, рекомендованных пользователю"
+    )
+    Collection<DynamicProductDto> data;
 
-    public Data(Collection<DynamicProduct> data) {
+    public Data(Collection<DynamicProductDto> data) {
         this.data = data;
     }
 
-    public Collection<DynamicProduct> getData() {
+    public Collection<DynamicProductDto> getData() {
         return data;
+    }
+
+    public void setData(Collection<DynamicProductDto> data) {
+        this.data = data;
     }
 
     @Override

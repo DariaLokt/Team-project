@@ -16,9 +16,9 @@ public class DynamicProduct {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    private String product_name;
-    private UUID product_id;
-    private String product_text;
+    private String productName;
+    private UUID productId;
+    private String productText;
 
     @OneToMany(mappedBy = "product")
     private Collection<DynamicRule> rule;
@@ -30,16 +30,16 @@ public class DynamicProduct {
         return id;
     }
 
-    public String getProduct_name() {
-        return product_name;
+    public String getProductName() {
+        return productName;
     }
 
-    public UUID getProduct_id() {
-        return product_id;
+    public UUID getProductId() {
+        return productId;
     }
 
-    public String getProduct_text() {
-        return product_text;
+    public String getProductText() {
+        return productText;
     }
 
     public Collection<DynamicRule> getRule() {
@@ -62,9 +62,9 @@ public class DynamicProduct {
     public String toString() {
         return "DynamicProduct{" +
                 "id=" + id +
-                ", product_name='" + product_name + '\'' +
-                ", product_id=" + product_id +
-                ", product_text='" + product_text + '\'' +
+                ", product_name='" + productName + '\'' +
+                ", product_id=" + productId +
+                ", product_text='" + productText + '\'' +
                 ", rule=" + rule +
                 '}';
     }
@@ -73,16 +73,16 @@ public class DynamicProduct {
         this.id = id;
     }
 
-    public void setProduct_name(String product_name) {
-        this.product_name = product_name;
+    public void setProductName(String productName) {
+        this.productName = productName;
     }
 
-    public void setProduct_id(UUID product_id) {
-        this.product_id = product_id;
+    public void setProductId(UUID productId) {
+        this.productId = productId;
     }
 
-    public void setProduct_text(String product_text) {
-        this.product_text = product_text;
+    public void setProductText(String productText) {
+        this.productText = productText;
     }
 
     public void setRule(Collection<DynamicRule> rule) {
