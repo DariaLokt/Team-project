@@ -12,6 +12,6 @@ public class TestConfig {
     @Bean
     @Primary
     public CacheManager cacheManager() {
-        return new NoOpCacheManager(); // Простой кэш для тестов
+        return new NoOpCacheManager();
     }
 }

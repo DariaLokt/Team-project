@@ -13,6 +13,12 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Service for interacting with stats
+ *
+ * @author dlok
+ * @version 1.0
+ */
 @Service
 public class StatsService {
     public final RuleCounterRepository ruleCounterRepository;
@@ -25,6 +31,10 @@ public class StatsService {
         this.dynamicRuleRepository = dynamicRuleRepository;
     }
 
+    /**
+     * Method returns all stats from the repository and also maps them to dto
+     * @return all stats in dto form
+     */
     public StatsDto getAllStats() {
         List<RuleCounter> existingStats = ruleCounterRepository.findAll();
         List<DynamicRule> allRules = dynamicRuleRepository.findAll();
@@ -39,6 +49,11 @@ public class StatsService {
         ruleCounterRepository.deleteAll();
     }
 
+    /**
+     * Method updates counter
+     * @param id old counter id
+     * @param newCount new counter to replace the old one
+     */
     public void changeCounter(UUID id, Long newCount) {
         ruleCounterRepository.changeCounter(id, newCount);
     }
