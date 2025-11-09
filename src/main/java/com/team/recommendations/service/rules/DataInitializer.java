@@ -4,6 +4,8 @@ import com.team.recommendations.model.dynamic.DynamicProduct;
 import com.team.recommendations.model.dynamic.DynamicRule;
 import com.team.recommendations.repository.DynamicProductRepository;
 import com.team.recommendations.repository.DynamicRuleRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,11 +14,19 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Component to initialize data. Creates dynamic products: Top Saving, Simple Credit, Invest 500
+ *
+ * @author dlok
+ * @version 1.0
+ */
 @Component
 public class DataInitializer implements CommandLineRunner {
 
     private final DynamicProductRepository dynamicProductRepository;
     private final DynamicRuleRepository dynamicRuleRepository;
+
+    private final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
 
     public DataInitializer(DynamicProductRepository dynamicProductRepository, DynamicRuleRepository dynamicRuleRepository) {
         this.dynamicProductRepository = dynamicProductRepository;
@@ -32,8 +42,9 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initData() {
-        /**
-         * Create initial products
+        logger.info("Starting database initialization...");
+        /*
+          Create initial products
          */
         DynamicProduct invest500Product = createDynamicProduct("Invest 500",UUID.fromString("147f6a0f-3b91-413b-ab99-87f081d60d5a"),"Откройте свой путь к успеху с индивидуальным инвестиционным счетом (ИИС) от нашего банка! Воспользуйтесь налоговыми льготами и начните инвестировать с умом. Пополните счет до конца года и получите выгоду в виде вычета на взнос в следующем налоговом периоде. Не упустите возможность разнообразить свой портфель, снизить риски и следить за актуальными рыночными тенденциями. Откройте ИИС сегодня и станьте ближе к финансовой независимости!");
         DynamicProduct topSavingProduct = createDynamicProduct("Top Saving",UUID.fromString("59efc529-2fff-41af-baff-90ccd7402925"),"Откройте свою собственную «Копилку» с нашим банком! «Копилка» — это уникальный банковский инструмент, который поможет вам легко и удобно накапливать деньги на важные цели. Больше никаких забытых чеков и потерянных квитанций — всё под контролем!\n" +
@@ -61,13 +72,14 @@ public class DataInitializer implements CommandLineRunner {
                 "\n" +
                 "Не упустите возможность воспользоваться выгодными условиями кредитования от нашей компании!");
 
-        /**
-         * Save initial products to dynamic products repository
+        /*
+          Save initial products to dynamic products repository
          */
         Collection<DynamicProduct> initialProducts = dynamicProductRepository.saveAll(List.of(topSavingProduct,simpleCreditProduct,invest500Product));
+        logger.info("Created {} dynamic products", initialProducts.size());
 
-        /**
-         * Create initial rules
+        /*
+          Create initial rules
          */
         DynamicRule invest500Rule1 = createDynamicRule("USER_OF",List.of("DEBIT"),false,invest500Product);
         DynamicRule invest500Rule2 = createDynamicRule("USER_OF",List.of("INVEST"),true,invest500Product);
@@ -82,10 +94,11 @@ public class DataInitializer implements CommandLineRunner {
         DynamicRule simpleCreditRule2 = createDynamicRule("TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW",List.of("DEBIT",">"),false,simpleCreditProduct);
         DynamicRule simpleCreditRule3 = createDynamicRule("TRANSACTION_SUM_COMPARE",List.of("DEBIT","DEPOSIT",">","100000"),false,simpleCreditProduct);
 
-        /**
-         * Save rules to dynamic rules repository
+        /*
+          Save rules to dynamic rules repository
          */
         dynamicRuleRepository.saveAll(List.of(invest500Rule1,invest500Rule2,invest500Rule3,topSavingRule1,topSavingRule2_1,topSavingRule2_2,topSavingRule3,simpleCreditRule1,simpleCreditRule2,simpleCreditRule3));
+        logger.info("Database initialization completed successfully");
     }
 
     private DynamicProduct createDynamicProduct(String name, UUID id, String text) {

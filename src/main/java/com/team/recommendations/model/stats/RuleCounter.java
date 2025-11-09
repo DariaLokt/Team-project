@@ -1,6 +1,5 @@
 package com.team.recommendations.model.stats;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -38,7 +37,7 @@ public class RuleCounter {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         RuleCounter that = (RuleCounter) o;
-        return count == that.count && Objects.equals(ruleId, that.ruleId);
+        return count.equals(that.count) && Objects.equals(ruleId, that.ruleId);
     }
 
     @Override

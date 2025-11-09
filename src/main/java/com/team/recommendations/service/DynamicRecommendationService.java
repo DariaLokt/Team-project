@@ -17,6 +17,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service for getting personal recommendations based on dynamic rules
+ * Service gives out recommendations and also updates rule application counter which is used for statistics
+ *
+ * @author dlok
+ * @version 1.0
+ * @see DynamicProduct
+ * @see DynamicRule
+ */
 @Service
 public class DynamicRecommendationService {
     private final DynamicProductRepository dynamicProductRepository;
@@ -32,6 +41,9 @@ public class DynamicRecommendationService {
     private static final String QUERY_ACTIVE_USER_OF = "ACTIVE_USER_OF";
     private static final String QUERY_TRANSACTION_SUM_COMPARE = "TRANSACTION_SUM_COMPARE";
     private static final String QUERY_TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW = "TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW";
+    /**
+     * TODO: make query enum
+     */
 
     private final Logger logger = LoggerFactory.getLogger(DynamicRecommendationService.class);
 
@@ -50,6 +62,18 @@ public class DynamicRecommendationService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Method for creating recommendations
+     * Method checks all the products, then checks if all the rules of the product are followed
+     * If so, method puts the product in the collection and updates the rule counter
+     * Also invokes method for dealing with Top Saving product if current configuration has been unable to deal with it
+     *
+     * @param userID id of the user to whom recommendations are given
+     * @return returns collection of recommendations that is later wrapped in RecommendationResponse DTO
+     * @see #countRuleApplications(Collection)
+     * @see #dealWithTopSavings(UUID, Collection)
+     * @see #checkRule(UUID, DynamicRule)
+     */
     @Transactional
     public Collection<Recommendation> getRecommendations(UUID userID) {
         logger.info("The method for creating recommendations was invoked");
@@ -58,15 +82,7 @@ public class DynamicRecommendationService {
         for (DynamicProduct product : dynamicProductRepository.findAll()) {
             Collection<Boolean> ruleAbidance = new ArrayList<>();
             for (DynamicRule rule : product.getRule()) {
-                switch (rule.getQuery()) {
-                    case QUERY_USER_OF -> ruleAbidance.add(isUSER_OFRule(userID, rule));
-                    case QUERY_ACTIVE_USER_OF -> ruleAbidance.add(isACTIVE_USER_OFRule(userID,rule));
-                    case QUERY_TRANSACTION_SUM_COMPARE -> ruleAbidance.add(isTRANSACTION_SUM_COMPARERule(userID,rule));
-                    case QUERY_TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW -> ruleAbidance.add(isTRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAWRule(userID,rule));
-                    default -> throw new IllegalArgumentException(
-                            "Unknown query type: " + rule.getQuery() + " for rule ID: " + rule.getId()
-                    );
-                }
+                ruleAbidance.add(checkRule(userID,rule));
             }
             if (!ruleAbidance.contains(false)) {
                 countRuleApplications(product.getRule());
@@ -83,6 +99,29 @@ public class DynamicRecommendationService {
         return recommendations;
     }
 
+    /**
+     * Method that checks type of the rule and also checks if it is followed
+     * @param userID user id
+     * @param rule the rule
+     * @return returns true if the rule is followed
+     * @see #isUSER_OFRule(UUID, DynamicRule)
+     * @see #isACTIVE_USER_OFRule(UUID, DynamicRule)
+     * @see #isTRANSACTION_SUM_COMPARERule(UUID, DynamicRule)
+     * @see #isTRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAWRule(UUID, DynamicRule)
+     */
+    private boolean checkRule(UUID userID, DynamicRule rule) {
+        return switch (rule.getQuery()) {
+            case QUERY_USER_OF -> isUSER_OFRule(userID, rule);
+            case QUERY_ACTIVE_USER_OF -> isACTIVE_USER_OFRule(userID, rule);
+            case QUERY_TRANSACTION_SUM_COMPARE -> isTRANSACTION_SUM_COMPARERule(userID, rule);
+            case QUERY_TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW -> isTRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAWRule(userID, rule);
+            default -> throw new IllegalArgumentException("Unknown query type: " + rule.getQuery() + " for rule ID: " + rule.getId());
+        };
+    }
+    /**
+     * Method updates rule application counter when the rules are applied
+     * @param rules collection of rules to be counted
+     */
     private void countRuleApplications(Collection<DynamicRule> rules) {
         for (DynamicRule dynamicRule : rules) {
             if (statsService.isPresentById(dynamicRule.getId())) {
@@ -98,6 +137,11 @@ public class DynamicRecommendationService {
         }
     }
 
+    /**
+     * Special method to deal with Top Saving product which has conflict with dynamic-rules-system
+     * @param id user id
+     * @param recommendations collection of recommendations that user has already received
+     */
     private void dealWithTopSavings(UUID id, Collection<Recommendation> recommendations) {
         logger.info("DealWithTopSavings invoked");
         boolean alreadyExists = recommendations.stream()
@@ -131,6 +175,14 @@ public class DynamicRecommendationService {
             logger.info("Top Saving added through dealWith for user: {}", id);
         }
     }
+
+    /**
+     * Supplementary method for associating dynamic rules with static rules
+     * @param product dynamic product from repository
+     * @param query desired query
+     * @param arguments desired arguments
+     * @return returns dynamic rule of the product which has desired query and arguments
+     */
     private DynamicRule findRuleByPattern(DynamicProduct product, String query, List<String> arguments) {
         return product.getRule().stream()
                 .filter(r -> r.getQuery().equals(query) && r.getArguments().equals(arguments))
@@ -138,6 +190,12 @@ public class DynamicRecommendationService {
                 .orElseThrow(() -> new IllegalStateException("Rule not found: " + query + " " + arguments));
     }
 
+    /**
+     * Method that returns specific argument from a dynamic rule
+     * @param rule dynamic rule
+     * @param arguments static collection of arguments one of which is desired
+     * @return argument
+     */
     private String extractArgument(DynamicRule rule, Collection<String> arguments) {
         return rule.getArguments().stream()
                 .filter(arguments::contains)
@@ -146,6 +204,12 @@ public class DynamicRecommendationService {
                         ". Expected one of: " + arguments + ", got: " + rule.getArguments()));
     }
 
+    /**
+     * Method for checking if the USER_OF rule is followed
+     * @param userID user id
+     * @param rule the rule
+     * @return true if the USER_OF rule is followed
+     */
     public boolean isUSER_OFRule(UUID userID, DynamicRule rule) {
         logger.info("Checked USER_OF for {} for product {} ", userID, rule.getProduct().getProductId());
         String type = extractArgument(rule,productTypes);
@@ -156,6 +220,12 @@ public class DynamicRecommendationService {
         }
     }
 
+    /**
+     * Method for checking if the ACTIVE_USER_OF rule is followed
+     * @param userID user id
+     * @param rule the rule
+     * @return true if the ACTIVE_USER_OF rule is followed
+     */
     public boolean isACTIVE_USER_OFRule(UUID userID, DynamicRule rule) {
         logger.info("Checked ACTIVE_USER_OF for {} for product {} ", userID, rule.getProduct().getProductId());
         String type = extractArgument(rule,productTypes);
@@ -165,6 +235,13 @@ public class DynamicRecommendationService {
             return recommendationsRepository.getActiveUse(userID,type);
         }
     }
+
+    /**
+     * Method for checking if the TRANSACTION_SUM_COMPARE rule is followed
+     * @param userID user id
+     * @param rule the rule
+     * @return true if the TRANSACTION_SUM_COMPARE rule is followed
+     */
     public boolean isTRANSACTION_SUM_COMPARERule(UUID userID, DynamicRule rule) {
         logger.info("Checked TRANSACTION_SUM_COMPARE for {} for product {} ", userID, rule.getProduct().getProductId());
         String productType = extractArgument(rule,productTypes);
@@ -179,6 +256,13 @@ public class DynamicRecommendationService {
             return compareRule.isFollowed();
         }
     }
+
+    /**
+     * Method for checking if the TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW rule is followed
+     * @param userID user id
+     * @param rule the rule
+     * @return true if the TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW rule is followed
+     */
     public boolean isTRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAWRule(UUID userID, DynamicRule rule) {
         logger.info("Checked TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW for {} for product {} ", userID, rule.getProduct().getProductId());
         String productType = extractArgument(rule,productTypes);

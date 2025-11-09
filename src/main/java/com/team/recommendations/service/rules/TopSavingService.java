@@ -11,9 +11,33 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Service for checking if the user is to be recommended Top Saving Product based on static rules
+ * Static rules are:
+ * - Пользователь использует как минимум один продукт с типом DEBIT.
+ * - Сумма пополнений по всем продуктам типа DEBIT больше или равна 50 000 ₽ ИЛИ Сумма пополнений по всем продуктам типа SAVING больше или равна 50 000 ₽.
+ * - Сумма пополнений по всем продуктам типа DEBIT больше, чем сумма трат по всем продуктам типа DEBIT.
+ *
+ * @author dlok
+ * @version 1.0
+ */
 @Service
 public class TopSavingService implements RuleSetService {
     private final RecommendationsRepository recommendationsRepository;
+    
+    private final static String TOP_SAVING_NAME = "Top Saving";
+    private final static UUID TOP_SAVING_ID = UUID.fromString("59efc529-2fff-41af-baff-90ccd7402925");
+    private final static String TOP_SAVING_DESCRIPTION = "Откройте свою собственную «Копилку» с нашим банком! «Копилка» — это уникальный банковский инструмент, который поможет вам легко и удобно накапливать деньги на важные цели. Больше никаких забытых чеков и потерянных квитанций — всё под контролем!\n" +
+            "\n" +
+            "Преимущества «Копилки»:\n" +
+            "\n" +
+            "Накопление средств на конкретные цели. Установите лимит и срок накопления, и банк будет автоматически переводить определенную сумму на ваш счет.\n" +
+            "\n" +
+            "Прозрачность и контроль. Отслеживайте свои доходы и расходы, контролируйте процесс накопления и корректируйте стратегию при необходимости.\n" +
+            "\n" +
+            "Безопасность и надежность. Ваши средства находятся под защитой банка, а доступ к ним возможен только через мобильное приложение или интернет-банкинг.\n" +
+            "\n" +
+            "Начните использовать «Копилку» уже сегодня и станьте ближе к своим финансовым целям!";
 
     public TopSavingService(RecommendationsRepository recommendationsRepository) {
         this.recommendationsRepository = recommendationsRepository;
@@ -21,27 +45,27 @@ public class TopSavingService implements RuleSetService {
 
     Logger logger = LoggerFactory.getLogger(TopSavingService.class);
 
+    /**
+     * Method to create recommendation if the static rules are followed
+     * @param id id of the user to whom the recommendation is being made
+     * @return returns recommendation if the static rules are followed or null if not
+     * @see #isGettingRecommendation(UUID) 
+     */
     @Override
     public Optional<Recommendation> getRecommendation(UUID id) {
         logger.info("Adding TopSaving function was invoked for user: {}", id);
         Recommendation recommendation = null;
         if (isGettingRecommendation(id)) {
-            recommendation = new Recommendation("Top Saving", UUID.fromString("59efc529-2fff-41af-baff-90ccd7402925"),
-                    "Откройте свою собственную «Копилку» с нашим банком! «Копилка» — это уникальный банковский инструмент, который поможет вам легко и удобно накапливать деньги на важные цели. Больше никаких забытых чеков и потерянных квитанций — всё под контролем!\n" +
-                            "\n" +
-                            "Преимущества «Копилки»:\n" +
-                            "\n" +
-                            "Накопление средств на конкретные цели. Установите лимит и срок накопления, и банк будет автоматически переводить определенную сумму на ваш счет.\n" +
-                            "\n" +
-                            "Прозрачность и контроль. Отслеживайте свои доходы и расходы, контролируйте процесс накопления и корректируйте стратегию при необходимости.\n" +
-                            "\n" +
-                            "Безопасность и надежность. Ваши средства находятся под защитой банка, а доступ к ним возможен только через мобильное приложение или интернет-банкинг.\n" +
-                            "\n" +
-                            "Начните использовать «Копилку» уже сегодня и станьте ближе к своим финансовым целям!");
+            recommendation = new Recommendation(TOP_SAVING_NAME, TOP_SAVING_ID, TOP_SAVING_DESCRIPTION);
         }
         return Optional.ofNullable(recommendation);
     }
 
+    /**
+     * Methods checks if all the static rules for the product are followed
+     * @param id id of the user to whom the recommendation is being made
+     * @return true is the rules are followed
+     */
     public boolean isGettingRecommendation(UUID id) {
 //        rule1
         IfUsedRule rule1 = new IfUsedRule(recommendationsRepository.getUse(id,"DEBIT"),true);

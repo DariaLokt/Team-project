@@ -5,7 +5,6 @@ import com.team.recommendations.model.dynamic.DynamicProductDto;
 import com.team.recommendations.model.dynamic.DynamicRuleDto;
 import com.team.recommendations.repository.DynamicProductRepository;
 import com.team.recommendations.repository.DynamicRuleRepository;
-import com.team.recommendations.repository.RuleCounterRepository;
 import com.team.recommendations.service.mapper.DynamicProductMapper;
 import com.team.recommendations.service.mapper.DynamicRuleMapper;
 import org.slf4j.Logger;
@@ -16,20 +15,28 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Service for adding, deleting and getting dynamic products
+ * Service also maps Dynamic Products to DTO
+ * @see DynamicProduct
+ * @see DynamicProductMapper
+ * @see DynamicProductDto
+ *
+ * @author dlok
+ * @version 1.0
+ */
 @Service
 public class DynamicService {
     private final DynamicProductRepository dynamicProductRepository;
     private final DynamicRuleRepository dynamicRuleRepository;
-    private final RuleCounterRepository ruleCounterRepository;
     private final DynamicProductMapper dynamicProductMapper;
     private final DynamicRuleMapper dynamicRuleMapper;
 
-    Logger logger = LoggerFactory.getLogger(DynamicService.class);
+    private final Logger logger = LoggerFactory.getLogger(DynamicService.class);
 
-    public DynamicService(DynamicProductRepository dynamicProductRepository, DynamicRuleRepository dynamicRuleRepository, RuleCounterRepository ruleCounterRepository, DynamicProductMapper dynamicProductMapper, DynamicRuleMapper dynamicRuleMapper) {
+    public DynamicService(DynamicProductRepository dynamicProductRepository, DynamicRuleRepository dynamicRuleRepository, DynamicProductMapper dynamicProductMapper, DynamicRuleMapper dynamicRuleMapper) {
         this.dynamicProductRepository = dynamicProductRepository;
         this.dynamicRuleRepository = dynamicRuleRepository;
-        this.ruleCounterRepository = ruleCounterRepository;
         this.dynamicProductMapper = dynamicProductMapper;
         this.dynamicRuleMapper = dynamicRuleMapper;
     }

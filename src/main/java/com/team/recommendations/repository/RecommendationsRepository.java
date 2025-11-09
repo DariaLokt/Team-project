@@ -11,6 +11,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Repository that uses read-only database with users and their transactions
+ * Query results are put in cache
+ */
 @Repository
 public class RecommendationsRepository {
     private final JdbcTemplate jdbcTemplate;

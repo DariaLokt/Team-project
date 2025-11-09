@@ -44,66 +44,91 @@ class RecommendationControllerTest {
     @Test
     @DisplayName("Выводит рекомендации через обычные правила")
     void getUserRecommendations() throws Exception {
-//        given
+        // given
         UUID id = UUID.randomUUID();
-        UUID recID = UUID.randomUUID();
-        Recommendation recommendationTop = new Recommendation("Top",recID,"1");
-        Recommendation recommendationSimp = new Recommendation("Simp",recID,"2");
-        Recommendation recommendationInv = new Recommendation("Inv",recID,"3");
-        Collection<Recommendation> recommendations = new ArrayList<>();
-        recommendations.add(recommendationInv);
-        recommendations.add(recommendationTop);
-        recommendations.add(recommendationSimp);
+        UUID recID1 = UUID.randomUUID();
+        UUID recID2 = UUID.randomUUID();
+        UUID recID3 = UUID.randomUUID();
 
-//        when
-        when(topSavingService.getRecommendation(any(UUID.class))).thenReturn(Optional.of(recommendationTop));
-        when(simpleCreditService.getRecommendation(any(UUID.class))).thenReturn(Optional.of(recommendationSimp));
-        when(invest500Service.getRecommendation(any(UUID.class))).thenReturn(Optional.of(recommendationInv));
+        Recommendation recommendationTop = new Recommendation("Top", recID1, "1");
+        Recommendation recommendationSimp = new Recommendation("Simp", recID2, "2");
+        Recommendation recommendationInv = new Recommendation("Inv", recID3, "3");
 
-//        then
+        // when
+        when(topSavingService.getRecommendation(id)).thenReturn(Optional.of(recommendationTop));
+        when(simpleCreditService.getRecommendation(id)).thenReturn(Optional.of(recommendationSimp));
+        when(invest500Service.getRecommendation(id)).thenReturn(Optional.of(recommendationInv));
+
+        // then
         mockMvc.perform(MockMvcRequestBuilders
-                        .get("/recommendation/{user_id}",String.valueOf(id))
+                        .get("/recommendation/{user_id}", id.toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.user_id").value(String.valueOf(id)))
-                .andExpect(jsonPath("$.recommendations.size()").value(3))
-                .andExpect(jsonPath("$.recommendations[0].id").value(String.valueOf(recID)))
-                .andExpect(jsonPath("$.recommendations[1].id").value(String.valueOf(recID)))
-                .andExpect(jsonPath("$.recommendations[2].id").value(String.valueOf(recID)));
-        verify(invest500Service,times(2)).getRecommendation(id);
-        verify(topSavingService,times(2)).getRecommendation(id);
-        verify(simpleCreditService,times(2)).getRecommendation(id);
+                .andExpect(jsonPath("$.userId").value(id.toString()))
+                .andExpect(jsonPath("$.recommendations.length()").value(3))
+                .andExpect(jsonPath("$.recommendations[0].name").value("Inv"))
+                .andExpect(jsonPath("$.recommendations[1].name").value("Top"))
+                .andExpect(jsonPath("$.recommendations[2].name").value("Simp"));
+
+        verify(invest500Service, times(2)).getRecommendation(id);
+        verify(topSavingService, times(2)).getRecommendation(id);
+        verify(simpleCreditService, times(2)).getRecommendation(id);
     }
 
     @Test
     @DisplayName("Выводит рекомендации через динамические правила")
     void getUserDynamicRecommendations() throws Exception {
-//        given
+        // given
         UUID id = UUID.randomUUID();
-        UUID recID = UUID.randomUUID();
-        Recommendation recommendationTop = new Recommendation("Top",recID,"1");
-        Recommendation recommendationSimp = new Recommendation("Simp",recID,"2");
-        Recommendation recommendationInv = new Recommendation("Inv",recID,"3");
-        Collection<Recommendation> recommendations = new ArrayList<>();
-        recommendations.add(recommendationInv);
-        recommendations.add(recommendationTop);
-        recommendations.add(recommendationSimp);
+        UUID recID1 = UUID.randomUUID();
+        UUID recID2 = UUID.randomUUID();
+        UUID recID3 = UUID.randomUUID();
 
-//        when
-        when(dynamicRecommendationService.getRecommendations(any(UUID.class))).thenReturn(recommendations);
+        Recommendation recommendationTop = new Recommendation("Top", recID1, "1");
+        Recommendation recommendationSimp = new Recommendation("Simp", recID2, "2");
+        Recommendation recommendationInv = new Recommendation("Inv", recID3, "3");
 
-//        then
+        Collection<Recommendation> recommendations = Arrays.asList(
+                recommendationInv, recommendationTop, recommendationSimp
+        );
+
+        // when
+        when(dynamicRecommendationService.getRecommendations(id)).thenReturn(recommendations);
+
+        // then
         mockMvc.perform(MockMvcRequestBuilders
-                        .get("/recommendation/dynamic/{user_id}",String.valueOf(id))
+                        .get("/recommendation/dynamic/{user_id}", id.toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.user_id").value(String.valueOf(id)))
-                .andExpect(jsonPath("$.recommendations.size()").value(3))
-                .andExpect(jsonPath("$.recommendations[0].id").value(String.valueOf(recID)))
-                .andExpect(jsonPath("$.recommendations[1].id").value(String.valueOf(recID)))
-                .andExpect(jsonPath("$.recommendations[2].id").value(String.valueOf(recID)));
-        verify(dynamicRecommendationService,only()).getRecommendations(id);
+                .andExpect(jsonPath("$.userId").value(id.toString()))
+                .andExpect(jsonPath("$.recommendations.length()").value(3))
+                .andExpect(jsonPath("$.recommendations[0].name").value("Inv"))
+                .andExpect(jsonPath("$.recommendations[1].name").value("Top"))
+                .andExpect(jsonPath("$.recommendations[2].name").value("Simp"));
+
+        verify(dynamicRecommendationService, times(1)).getRecommendations(id);
+    }
+
+    @Test
+    @DisplayName("Возвращает пустые рекомендации когда нет подходящих продуктов")
+    void getUserRecommendations_Empty() throws Exception {
+        // given
+        UUID id = UUID.randomUUID();
+
+        // when
+        when(topSavingService.getRecommendation(id)).thenReturn(Optional.empty());
+        when(simpleCreditService.getRecommendation(id)).thenReturn(Optional.empty());
+        when(invest500Service.getRecommendation(id)).thenReturn(Optional.empty());
+
+        // then
+        mockMvc.perform(MockMvcRequestBuilders
+                        .get("/recommendation/{user_id}", id.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(id.toString()))
+                .andExpect(jsonPath("$.recommendations.length()").value(0));
     }
 }
